@@ -1,0 +1,77 @@
+@baseUrl = http://localhost:8000/api/v1
+@accessToken = cole-o-access-token-aqui
+@refreshToken = cole-o-refresh-token-aqui
+@userId = cole-o-id-do-usuario-aqui
+
+### Criar paciente
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Maria Silva",
+  "email": "maria@example.com",
+  "password": "senha-segura",
+  "role": "patient"
+}
+
+### Criar nutricionista
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Ana Souza",
+  "email": "ana@example.com",
+  "password": "senha-segura",
+  "role": "nutritionist"
+}
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria@example.com",
+  "password": "senha-segura"
+}
+
+### Usuário autenticado
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+
+### Listar usuários — administrador
+GET {{baseUrl}}/users?offset=0&limit=20
+Authorization: Bearer {{accessToken}}
+
+### Consultar usuário
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+### Atualizar usuário
+PATCH {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Maria Silva Atualizada",
+  "status": "active"
+}
+
+### Excluir usuário — administrador
+DELETE {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+### Renovar tokens
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### Encerrar sessão
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}

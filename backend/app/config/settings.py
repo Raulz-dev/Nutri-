@@ -22,7 +22,10 @@ class Settings(BaseSettings):
     smtp_port: int = Field(default=1025, gt=0, le=65535)
     smtp_from_email: str = "nao-responda@maissaude.local"
     password_reset_url: str = "http://localhost:5173/redefinir-senha"
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     model_config = SettingsConfigDict(
         env_file=".env",

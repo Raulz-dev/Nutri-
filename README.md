@@ -1,6 +1,6 @@
 # +Saúde
 
-Backend da plataforma de acompanhamento nutricional +Saúde.
+Plataforma de acompanhamento nutricional +Saúde, com backend FastAPI e frontend React.
 
 O módulo inicial oferece CRUD de usuários, autenticação JWT, controle de perfis,
 bloqueio de contas e recuperação de senha.
@@ -28,6 +28,28 @@ uv run uvicorn app.main:app --reload --reload-dir app
 ```
 
 Swagger: `http://127.0.0.1:8000/docs`
+
+## Frontend
+
+Em outro terminal:
+
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+Aplicação: `http://127.0.0.1:5173/login`
+
+Validação do frontend:
+
+```bash
+cd frontend
+npm run typecheck
+npm run build
+npm audit
+```
 
 ## Testes e qualidade
 

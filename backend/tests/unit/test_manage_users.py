@@ -90,6 +90,18 @@ async def test_patient_cannot_change_own_role() -> None:
 
 
 @pytest.mark.asyncio
+async def test_admin_cannot_change_own_role_or_status() -> None:
+    admin = make_user("admin@example.com", UserRole.ADMIN)
+    use_case = UpdateUser(FakeUserRepository([admin]), FakeRefreshRepository())
+
+    with pytest.raises(UserAccessDeniedError):
+        await use_case.execute(admin, admin.id, role=UserRole.PATIENT)
+
+    with pytest.raises(UserAccessDeniedError):
+        await use_case.execute(admin, admin.id, status=UserStatus.BLOCKED)
+
+
+@pytest.mark.asyncio
 async def test_blocking_user_revokes_refresh_sessions() -> None:
     admin = make_user("admin@example.com", UserRole.ADMIN)
     patient = make_user("patient@example.com")
@@ -99,6 +111,19 @@ async def test_blocking_user_revokes_refresh_sessions() -> None:
     updated = await use_case.execute(admin, patient.id, status=UserStatus.BLOCKED)
 
     assert updated.status == UserStatus.BLOCKED
+    assert refresh_repository.revoked_user_ids == [patient.id]
+
+
+@pytest.mark.asyncio
+async def test_changing_role_revokes_refresh_sessions() -> None:
+    admin = make_user("admin@example.com", UserRole.ADMIN)
+    patient = make_user("patient@example.com")
+    refresh_repository = FakeRefreshRepository()
+    use_case = UpdateUser(FakeUserRepository([admin, patient]), refresh_repository)
+
+    updated = await use_case.execute(admin, patient.id, role=UserRole.NUTRITIONIST)
+
+    assert updated.role == UserRole.NUTRITIONIST
     assert refresh_repository.revoked_user_ids == [patient.id]
 
 

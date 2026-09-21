@@ -14,8 +14,8 @@ class CreateUser:
         self._password_hasher = password_hasher
 
     async def execute(self, name: str, email: str, password: str, role: UserRole) -> User:
-        if role == UserRole.ADMIN:
-            raise InvalidUserRoleError("Administrador não pode ser criado pelo cadastro público.")
+        if role != UserRole.PATIENT:
+            raise InvalidUserRoleError("O cadastro público permite apenas pacientes.")
 
         normalized_email = email.strip().lower()
         if await self._repository.find_by_email(normalized_email) is not None:

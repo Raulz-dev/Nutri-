@@ -14,7 +14,7 @@ class SMTPPasswordResetSender:
     async def __call__(self, recipient: str, token: str) -> None:
         query = urlencode({"token": token})
         message = EmailMessage()
-        message["Subject"] = "Redefinição de senha do +Saúde"
+        message["Subject"] = "Redefinição de senha do Nutri +"
         message["From"] = self._from_email
         message["To"] = recipient
         message.set_content(

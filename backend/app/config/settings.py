@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "+Saúde API"
+    app_name: str = "Nutri + API"
     app_env: Literal["development", "test", "production"] = "development"
     debug: bool = False
     database_url: str

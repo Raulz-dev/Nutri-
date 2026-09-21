@@ -34,6 +34,10 @@ class UpdateUser:
             raise UserAccessDeniedError("Você não tem permissão para atualizar este usuário.")
         if not is_admin and (role is not None or status is not None):
             raise UserAccessDeniedError("Apenas administradores podem alterar perfil ou status.")
+        if is_admin and actor.id == user_id and (role is not None or status is not None):
+            raise UserAccessDeniedError(
+                "Administradores não podem alterar o próprio perfil ou status."
+            )
 
         user = await self._user_repository.find_by_id(user_id)
         if user is None:
@@ -52,6 +56,6 @@ class UpdateUser:
             user.change_status(status)
 
         updated_user = await self._user_repository.update(user)
-        if status == UserStatus.BLOCKED:
+        if role is not None or status is not None:
             await self._refresh_repository.revoke_all_for_user(user.id)
         return updated_user

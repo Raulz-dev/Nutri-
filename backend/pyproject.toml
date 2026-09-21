@@ -1,7 +1,7 @@
 [project]
 name = "mais-saude-backend"
 version = "0.1.0"
-description = "API da plataforma de acompanhamento nutricional +Saúde"
+description = "API da plataforma de acompanhamento nutricional Nutri +"
 requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.18.5",
@@ -32,4 +32,3 @@ target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
-

@@ -62,7 +62,8 @@ async def test_create_user_rejects_duplicate_email() -> None:
 
 
 @pytest.mark.asyncio
-async def test_public_registration_rejects_admin() -> None:
+@pytest.mark.parametrize("role", [UserRole.ADMIN, UserRole.NUTRITIONIST])
+async def test_public_registration_rejects_privileged_roles(role: UserRole) -> None:
     use_case = CreateUser(FakeUserRepository(), PasswordHasher())
 
     with pytest.raises(InvalidUserRoleError):
@@ -70,5 +71,5 @@ async def test_public_registration_rejects_admin() -> None:
             name="Admin Sistema",
             email="admin@example.com",
             password="senha-segura",
-            role=UserRole.ADMIN,
+            role=role,
         )

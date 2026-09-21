@@ -27,11 +27,7 @@ export function ForgotPasswordPage() {
       const response = await forgotPasswordRequest(email.trim().toLowerCase());
       setMessage(response.message);
     } catch (requestError) {
-      setError(
-        requestError instanceof ApiError
-          ? requestError.message
-          : "Não foi possível conectar ao servidor.",
-      );
+      setError(requestError instanceof ApiError ? requestError.message : "Não foi possível conectar ao servidor.");
     } finally {
       setLoading(false);
     }
@@ -41,9 +37,9 @@ export function ForgotPasswordPage() {
     <main className="login-page">
       <section className="login-card" aria-labelledby="forgot-title">
         <div className="login-card__content">
-          <div className="brand" aria-label="Mais Saúde">
+          <div className="brand" aria-label="Nutri Mais">
+            <span>Nutri</span>
             <span className="brand__symbol">+</span>
-            <span>Saúde</span>
           </div>
 
           <div className="login-card__heading">
@@ -62,7 +58,8 @@ export function ForgotPasswordPage() {
               label="E-mail"
               type="email"
               autoComplete="email"
-              placeholder="voce@exemplo.com"
+              required
+              placeholder="email@email.com"
               value={email}
               error={error}
               onChange={(event) => setEmail(event.target.value)}

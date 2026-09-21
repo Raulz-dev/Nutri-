@@ -1,15 +1,15 @@
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #173f46;
-  background: #dff5ef;
+  color: #2f2543;
+  background: #f4f0fb;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --primary: #167c75;
-  --primary-dark: #0f645f;
-  --ink: #173f46;
-  --muted: #6d8588;
-  --line: #dce8e6;
+  --primary: #6d3ccf;
+  --primary-dark: #5428a8;
+  --ink: #2f2543;
+  --muted: #766d86;
+  --line: #e5dff0;
   --danger: #b54646;
 }
 
@@ -47,32 +47,43 @@ a:hover {
   background:
     radial-gradient(circle at 12% 12%, rgb(255 255 255 / 70%) 0 4px, transparent 5px),
     radial-gradient(circle at 87% 86%, rgb(255 255 255 / 48%) 0 5px, transparent 6px),
-    linear-gradient(145deg, #e9faf5 0%, #ccece3 50%, #d9f2eb 100%);
+    linear-gradient(145deg, #fbf9ff 0%, #e8ddfa 50%, #f2ecfb 100%);
+}
+
+.login-page {
+  position: fixed;
+  inset: 0;
+  min-height: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  padding: clamp(20px, 4vh, 48px);
 }
 
 .login-card {
   width: min(1080px, 100%);
-  min-height: 640px;
+  height: min(680px, 100%);
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1.08fr;
   overflow: hidden;
   background: #fff;
-  border: 1px solid rgb(23 63 70 / 8%);
+  border: 1px solid rgb(74 45 112 / 10%);
   border-radius: 28px;
-  box-shadow: 0 28px 80px rgb(28 93 88 / 18%);
+  box-shadow: 0 28px 80px rgb(83 49 130 / 18%);
 }
 
 .login-card__content {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 56px 68px;
+  padding: clamp(36px, 6vh, 56px) clamp(42px, 5vw, 68px);
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   align-self: flex-start;
   color: var(--ink);
   font-family: inherit;
@@ -81,19 +92,14 @@ a:hover {
 }
 
 .brand__symbol {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: var(--primary);
-  border-radius: 11px;
-  font-size: 26px;
+  color: var(--primary);
+  font-size: 27px;
+  font-weight: 800;
   line-height: 1;
 }
 
 .login-card__heading {
-  margin: 54px 0 34px;
+  margin: clamp(30px, 5vh, 54px) 0 clamp(24px, 3.5vh, 34px);
 }
 
 .eyebrow {
@@ -133,7 +139,7 @@ h1 {
 }
 
 .field label {
-  color: #35575c;
+  color: #514361;
   font-size: 13px;
   font-weight: 600;
 }
@@ -143,7 +149,7 @@ h1 {
   height: 50px;
   padding: 0 15px;
   color: var(--ink);
-  background: #fbfdfd;
+  background: #fdfcff;
   border: 1px solid var(--line);
   border-radius: 12px;
   outline: none;
@@ -151,12 +157,12 @@ h1 {
 }
 
 .field input::placeholder {
-  color: #a0b1b2;
+  color: #a79db5;
 }
 
 .field input:focus {
-  border-color: #3c9f98;
-  box-shadow: 0 0 0 4px rgb(60 159 152 / 12%);
+  border-color: #8b5bdd;
+  box-shadow: 0 0 0 4px rgb(109 60 207 / 13%);
 }
 
 .field input[aria-invalid="true"] {
@@ -209,7 +215,7 @@ h1 {
   background: var(--primary);
   border: 0;
   border-radius: 12px;
-  box-shadow: 0 12px 25px rgb(22 124 117 / 18%);
+  box-shadow: 0 12px 25px rgb(109 60 207 / 22%);
   cursor: pointer;
   font-weight: 700;
   transition: background 160ms ease, transform 160ms ease;
@@ -258,6 +264,10 @@ h1 {
   font-size: 13px;
 }
 
+.create-account-link {
+  margin-top: -10px;
+}
+
 .login-card__support {
   margin: 34px 0 0;
   color: var(--muted);
@@ -265,18 +275,47 @@ h1 {
   text-align: center;
 }
 
+.register-page .login-card__content {
+  padding: 28px clamp(38px, 4vw, 56px);
+}
+
+.register-page .login-card__heading {
+  margin: 22px 0 18px;
+}
+
+.register-page .login-card__heading p {
+  margin-top: 9px;
+  line-height: 1.45;
+}
+
+.register-page .login-form {
+  gap: 12px;
+}
+
+.register-page .field {
+  gap: 5px;
+}
+
+.register-page .field input {
+  height: 44px;
+}
+
+.register-page .button {
+  min-height: 46px;
+}
+
 .login-card__visual {
   position: relative;
-  min-height: 640px;
+  min-height: 0;
   overflow: hidden;
-  background: #79d0cc;
+  background: #7b50cb;
 }
 
 .login-card__visual::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 55%, rgb(9 69 72 / 42%) 100%);
+  background: linear-gradient(180deg, transparent 55%, rgb(48 24 88 / 55%) 100%);
 }
 
 .login-card__visual img {
@@ -323,7 +362,7 @@ h1 {
   padding: 48px;
   background: #fff;
   border-radius: 24px;
-  box-shadow: 0 24px 70px rgb(28 93 88 / 16%);
+  box-shadow: 0 24px 70px rgb(83 49 130 / 16%);
 }
 
 .profile-card .eyebrow {
@@ -352,6 +391,7 @@ h1 {
 
   .login-card {
     width: min(540px, 100%);
+    height: min(640px, 100%);
     grid-template-columns: 1fr;
   }
 
@@ -364,8 +404,7 @@ h1 {
   }
 
   .login-card__visual {
-    min-height: 310px;
-    grid-row: 1;
+    display: none;
   }
 
   .login-card__visual img {
@@ -385,35 +424,70 @@ h1 {
   }
 
   .login-card {
-    min-height: 100vh;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     border: 0;
     border-radius: 0;
     box-shadow: none;
   }
 
   .login-card__content {
-    padding: 34px 24px 42px;
+    padding: 24px;
   }
 
-  .login-card__visual {
-    min-height: 225px;
+  .login-card__heading {
+    margin: 24px 0 20px;
   }
 
-  .visual-copy {
-    right: 24px;
-    bottom: 22px;
-    left: 24px;
+  .login-card__heading p {
+    margin-top: 10px;
+    line-height: 1.45;
   }
 
-  .visual-copy p {
-    margin-top: 9px;
-    font-size: 17px;
+  .login-form {
+    gap: 14px;
+  }
+
+  .field {
+    gap: 6px;
+  }
+
+  .field input {
+    height: 46px;
+  }
+
+  .password-field__toggle {
+    top: 33px;
   }
 
   .login-form__options {
-    align-items: flex-start;
-    flex-direction: column;
+    justify-content: flex-end;
+    margin-top: 0;
+  }
+
+  .login-card__support {
+    margin-top: 20px;
+  }
+
+  .register-page .login-card__content {
+    padding: 18px 24px;
+  }
+
+  .register-page .login-card__heading {
+    margin: 16px 0 14px;
+  }
+
+  .register-page .login-card__heading p {
+    display: none;
+  }
+
+  .register-page .login-form {
     gap: 10px;
+  }
+
+  .register-page .field input {
+    height: 42px;
   }
 
   .profile-card {

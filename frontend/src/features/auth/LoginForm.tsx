@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
@@ -13,6 +13,7 @@ type FormErrors = {
 
 export function LoginForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,11 +39,9 @@ export function LoginForm() {
     setLoading(true);
     try {
       await login({ email: email.trim().toLowerCase(), password });
-      navigate("/app/perfil", { replace: true });
+      navigate("/app/paciente", { replace: true });
     } catch (error) {
-      setRequestError(
-        error instanceof ApiError ? error.message : "Não foi possível conectar ao servidor.",
-      );
+      setRequestError(error instanceof ApiError ? error.message : "Não foi possível conectar ao servidor.");
     } finally {
       setLoading(false);
     }
@@ -55,13 +54,19 @@ export function LoginForm() {
           {requestError}
         </div>
       )}
+      {searchParams.get("cadastro") === "sucesso" ? (
+        <div className="login-form__success" role="status">
+          Conta criada. Entre com seu e-mail e senha.
+        </div>
+      ) : null}
 
       <Input
         label="E-mail"
         type="email"
         name="email"
         autoComplete="email"
-        placeholder="voce@exemplo.com"
+        required
+        placeholder="email@email.com"
         value={email}
         error={errors.email}
         onChange={(event) => setEmail(event.target.value)}
@@ -73,6 +78,7 @@ export function LoginForm() {
           type={showPassword ? "text" : "password"}
           name="password"
           autoComplete="current-password"
+          required
           placeholder="Digite sua senha"
           value={password}
           error={errors.password}
@@ -95,6 +101,9 @@ export function LoginForm() {
       <Button type="submit" loading={loading} loadingLabel="Entrando...">
         Entrar
       </Button>
+      <Link className="back-link create-account-link" to="/cadastro">
+        Criar conta
+      </Link>
     </form>
   );
 }

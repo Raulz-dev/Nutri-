@@ -25,8 +25,8 @@ export function ProfilePage() {
     <main className="profile-page">
       <section className="profile-card">
         <div className="brand">
+          <span>Nutri</span>
           <span className="brand__symbol">+</span>
-          <span>Saúde</span>
         </div>
         {error ? <p role="alert">{error}</p> : null}
         {!error && !user ? <p>Carregando perfil...</p> : null}

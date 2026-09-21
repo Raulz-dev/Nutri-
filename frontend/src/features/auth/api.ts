@@ -21,3 +21,29 @@ export function forgotPasswordRequest(email: string) {
     body: JSON.stringify({ email }),
   });
 }
+
+export function registerPatientRequest(data: {
+  name: string;
+  email: string;
+  password: string;
+}) {
+  return apiRequest<void>("/users", {
+    method: "POST",
+    body: JSON.stringify({ ...data, role: "patient" }),
+  });
+}
+
+export function resetPasswordRequest(
+  token: string,
+  newPassword: string,
+  newPasswordConfirmation: string,
+) {
+  return apiRequest<{ message: string }>("/auth/password/reset", {
+    method: "POST",
+    body: JSON.stringify({
+      token,
+      new_password: newPassword,
+      new_password_confirmation: newPasswordConfirmation,
+    }),
+  });
+}

@@ -26,8 +26,14 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { detail?: string } | null;
-    throw new ApiError(body?.detail || "Não foi possível concluir a solicitação.", response.status);
+    const body = (await response.json().catch(() => null)) as { detail?: unknown } | null;
+    const message =
+      typeof body?.detail === "string"
+        ? body.detail
+        : response.status === 422
+          ? "Confira os campos informados e seus limites e tente novamente."
+          : "Não foi possível concluir a solicitação.";
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {

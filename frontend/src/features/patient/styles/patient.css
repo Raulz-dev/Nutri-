@@ -72,7 +72,7 @@
 @media(max-width:1050px){.patient-app{grid-template-columns:88px minmax(0,1fr)}.dashboard-layout{grid-template-columns:1fr}.dashboard-aside{grid-template-columns:1.2fr 1fr}.patient-content{padding-inline:30px}.patient-sidebar{padding-inline:14px}}
 @media(max-width:700px){.patient-content{padding:26px 18px 36px}.patient-header h1{font-size:31px}.overview-card{padding:27px 25px;border-radius:22px}.overview-card h2{font-size:27px}.overview-card p{font-size:13px}.summary-card{min-height:0}.patient-panel{padding:22px}.dashboard-aside{grid-template-columns:1fr}.meal-plan-hero{padding:25px}.meal-schedule{padding:21px}}
 @media(max-width:700px){.daily-macros{grid-template-columns:1fr;padding:21px}.daily-macros-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:430px){.overview-card p{padding-right:74px}.progress-ring{top:142px;right:23px}.patient-header{align-items:flex-start}.patient-avatar{width:42px;height:42px}}
+@media(max-width:430px){.overview-card p{padding-right:100px}.progress-ring{top:142px;right:23px;width:82px;height:82px}.progress-ring::before{width:65px;height:65px}.patient-header{align-items:flex-start}.patient-avatar{width:42px;height:42px}}
 
 .meal-card-button{width:100%;display:grid;grid-template-columns:64px minmax(0,1fr) auto auto;align-items:center;gap:16px;padding:19px;text-align:left;background:#faf8fd;cursor:pointer;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
 .meal-card-button:hover{transform:translateY(-1px);border-color:#cdbce5;box-shadow:0 10px 24px rgb(74 45 112 / 8%)}
@@ -103,7 +103,7 @@
 .meal-macros small{color:#8d8498;font-size:10px}
 .meal-macros strong{font-size:15px}
 .substitution-modal-backdrop{z-index:60;background:rgb(31 20 45 / 40%)}
-.substitution-modal{width:min(520px,100%);padding:30px;background:#fff;border-radius:24px;box-shadow:0 28px 90px rgb(24 14 38 / 34%)}
+.substitution-modal{width:min(520px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:30px;background:#fff;border-radius:24px;box-shadow:0 28px 90px rgb(24 14 38 / 34%)}
 .substitution-intro{max-width:390px;margin:13px 0 24px;color:#776d82;font-size:13px;line-height:1.55}
 .substitution-meal{margin-bottom:24px;padding:20px;background:#faf8fc;border:1px solid #e7dfee;border-radius:16px}
 .substitution-meal-label{display:block;color:#6d3ccf;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
@@ -115,3 +115,49 @@
 @media(max-width:700px){.meal-card-button{grid-template-columns:52px minmax(0,1fr) auto;gap:11px;padding:16px}.meal-open{grid-column:2/4;justify-self:start}.meal-modal-backdrop,.substitution-modal-backdrop{align-items:end;padding:0}.meal-modal,.substitution-modal{width:100%;max-height:88vh;border-radius:24px 24px 0 0;padding:24px 20px 28px}.meal-modal-foods{grid-template-columns:1fr}.meal-macros{grid-template-columns:1fr 1fr}.meal-modal-section-title{align-items:flex-start}.meal-substitution-button{flex:0 0 auto}}
 @media(max-width:430px){.meal-card-button{grid-template-columns:46px minmax(0,1fr) auto}.meal-card-button .meal-status{display:inline}.meal-modal-section-title{display:grid}.meal-substitution-button{justify-self:start}.meal-modal-header h2{font-size:24px}}
 @media(max-width:430px){.substitution-modal{padding:24px 20px 28px}.substitution-meal{padding:16px}}
+
+.patient-demo-notice{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px;padding:16px;background:#fff;border:1px solid #d8caed;border-radius:14px;font-size:13px}
+.patient-demo-notice p{flex-basis:100%;margin:0;line-height:1.5}
+.patient-demo-notice a{color:#6430c5}
+.patient-demo-notice button{padding:8px 12px;color:#6430c5;background:#f3edfc;border:1px solid #d8caed;border-radius:8px;cursor:pointer}
+
+.home-dashboard{display:grid;gap:22px}
+.health-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px}
+.health-summary-grid .summary-card{min-height:116px;align-items:center;padding:18px}
+.health-summary-grid .summary-icon{width:42px;height:42px;border-radius:13px}
+.health-summary-grid .summary-card div{min-width:0;gap:5px}
+.health-summary-grid .summary-card strong{overflow:hidden;font-size:19px;text-overflow:ellipsis;white-space:nowrap}
+.dashboard-insights{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.evolution-chart-card{min-width:0;padding:26px 28px;background:#fff;border:1px solid #e8e2ed;border-radius:24px;box-shadow:0 12px 34px rgb(55 35 80 / 6%)}
+.evolution-chart-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.evolution-chart-header h2{margin:6px 0 4px;font-size:22px;letter-spacing:-.025em}
+.evolution-chart-header p{margin:0;color:#8d8498;font-size:12px}
+.chart-toggle{display:flex;padding:3px;background:#f2edf8;border-radius:11px}
+.chart-toggle button{min-height:34px;padding:0 13px;color:#786d84;background:transparent;border:0;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer}
+.chart-toggle button.is-active{color:#fff;background:#6d3ccf;box-shadow:0 5px 14px rgb(83 42 158 / 22%)}
+.line-chart{position:relative;margin-top:20px}
+.line-chart svg{width:100%;height:190px;overflow:visible}
+.chart-grid-line{stroke:#eee9f2;stroke-width:1;vector-effect:non-scaling-stroke}
+.chart-area{fill:url(#chart-area-gradient);transition:all .35s ease}
+.chart-line{fill:none;stroke:#6d3ccf;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 5px 5px rgb(94 43 181 / 18%));transition:all .35s ease}
+.chart-point{fill:#fff;stroke:#6d3ccf;stroke-width:3;vector-effect:non-scaling-stroke;transition:all .35s ease}
+.chart-values{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:-8px;text-align:center}
+.chart-values span{display:grid;gap:4px}
+.chart-values strong{font-size:10px}
+.chart-values small{color:#92899d;font-size:9px}
+.chart-details-button{display:flex;align-items:center;gap:6px;margin:18px 0 0 auto;padding:0;color:#6430c5;background:transparent;border:0;font-size:11px;font-weight:800;cursor:pointer}
+.chart-details-button .patient-icon{width:16px;height:16px}
+.next-appointment-card{position:relative;isolation:isolate;min-height:100%;padding:30px;overflow:hidden;color:#fff;background:linear-gradient(135deg,#5d2bb6 0%,#7542ce 55%,#9463df 100%);border-radius:24px;box-shadow:0 18px 40px rgb(91 52 158 / 22%)}
+.next-appointment-card::after{content:"";position:absolute;z-index:-1;right:-85px;bottom:-115px;width:280px;height:280px;border:56px solid rgb(255 255 255 / 8%);border-radius:50%}
+.appointment-icon{width:46px;height:46px;display:grid;place-items:center;margin-bottom:28px;color:#fff;background:rgb(255 255 255 / 15%);border:1px solid rgb(255 255 255 / 18%);border-radius:14px}
+.appointment-eyebrow{color:#e5d8fa;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.next-appointment-card h2{margin:9px 0 1px;font-size:clamp(25px,2.3vw,34px);letter-spacing:-.03em}
+.next-appointment-card>strong{font-size:20px;color:#eee3ff}
+.appointment-professional{display:flex;align-items:center;gap:12px;margin-top:30px;padding-top:22px;border-top:1px solid rgb(255 255 255 / 18%)}
+.appointment-professional>span{width:42px;height:42px;display:grid;place-items:center;flex:0 0 auto;color:#6230b7;background:#fff;border-radius:13px;font-size:12px;font-weight:900}
+.appointment-professional div{display:grid;gap:4px}.appointment-professional strong{font-size:13px}.appointment-professional small{color:#ddd0f0;font-size:10px}
+.next-appointment-card button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:46px;margin-top:24px;padding:0 16px;color:#5f2db3;background:#fff;border:0;border-radius:13px;font-size:12px;font-weight:800;cursor:pointer}
+.next-appointment-card button .patient-icon{width:17px;height:17px}
+@media(max-width:1200px){.health-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.health-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-insights{grid-template-columns:1fr}}
+@media(max-width:700px){.home-dashboard{gap:14px}.health-summary-grid{grid-template-columns:1fr;gap:10px}.health-summary-grid .summary-card{min-height:0;padding:16px}.evolution-chart-card,.next-appointment-card{padding:22px 18px}.evolution-chart-header{display:grid}.chart-toggle{width:100%}.chart-toggle button{flex:1}.line-chart svg{height:165px}.next-appointment-card{min-height:360px}}

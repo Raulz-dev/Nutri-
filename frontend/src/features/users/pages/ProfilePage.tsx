@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../auth/useAuth";
 import { getCurrentUser } from "../api";
@@ -35,6 +35,7 @@ export function ProfilePage() {
             <span className="eyebrow">Login realizado</span>
             <h1>Olá, {user.name}</h1>
             <p>{user.email}</p>
+            <Link to="/app/paciente">Ver demonstração da área do paciente</Link>
             <button className="button" type="button" onClick={handleLogout}>
               Sair
             </button>

@@ -36,6 +36,16 @@ export const patientMock = {
     { date: "17 set", weight: 69.1, bodyFat: 25.2 },
     { date: "24 set", weight: 68.4, bodyFat: 24.8 },
   ],
+  measurementHistory: [
+    { date: "06 ago", weight: 72.6, bodyFat: 28.1 },
+    { date: "13 ago", weight: 72.0, bodyFat: 27.7 },
+    { date: "20 ago", weight: 71.5, bodyFat: 27.3 },
+    { date: "27 ago", weight: 71.0, bodyFat: 26.9 },
+    { date: "03 set", weight: 70.5, bodyFat: 26.4 },
+    { date: "10 set", weight: 69.8, bodyFat: 25.8 },
+    { date: "17 set", weight: 69.1, bodyFat: 25.2 },
+    { date: "24 set", weight: 68.4, bodyFat: 24.8 },
+  ],
   messages: [
     { id: 1, author: "Dra. Marina", preview: "Como você se sentiu com o novo plano?", time: "09:42", unread: true },
     { id: 2, author: "Dra. Marina", preview: "Sua evolução desta semana foi muito boa.", time: "Ontem", unread: false },

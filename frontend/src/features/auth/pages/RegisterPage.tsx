@@ -77,7 +77,7 @@ export function RegisterPage() {
           </form>
         </div>
         <div className="login-card__visual" aria-hidden="true">
-          <img src="/assets/register-healthy.png" alt="" />
+          <img src="/assets/register-healthy.webp" alt="" />
           <div className="visual-copy"><span className="visual-copy__badge">Acompanhamento próximo</span><p>Organize sua alimentação com orientação profissional.</p></div>
         </div>
       </section>

@@ -25,7 +25,7 @@ export function LoginPage() {
         </div>
 
         <div className="login-card__visual" aria-hidden="true">
-          <img src="/assets/runner-health.png" alt="" />
+          <img src="/assets/runner-health.webp" alt="" />
           <div className="visual-copy">
             <span className="visual-copy__badge">Cuidado que acompanha</span>
             <p>Pequenos passos constroem uma vida mais saudável.</p>

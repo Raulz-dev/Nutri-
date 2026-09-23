@@ -74,7 +74,7 @@ export function ForgotPasswordPage() {
         </div>
 
         <div className="login-card__visual" aria-hidden="true">
-          <img src="/assets/runner-health.png" alt="" />
+          <img src="/assets/runner-health.webp" alt="" />
           <div className="visual-copy">
             <span className="visual-copy__badge">Continue em movimento</span>
             <p>Seu acompanhamento continua quando você voltar.</p>

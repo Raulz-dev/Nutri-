@@ -16,7 +16,7 @@ export function AppRouter() {
       <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
       <Route path="/cadastro" element={<RegisterPage />} />
       <Route element={<ProtectedRoute />}>
-        <Route path="/app/paciente" element={<PatientDashboardPage />} />
+        <Route path="/app/paciente/:section?" element={<PatientDashboardPage />} />
         <Route path="/app/perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

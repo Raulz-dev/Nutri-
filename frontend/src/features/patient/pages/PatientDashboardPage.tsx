@@ -6,15 +6,17 @@ import { patientMock, type PatientSection } from "../mocks/patient-data";
 import { HomeSection } from "../sections/HomeSection";
 import { MealPlanSection } from "../sections/MealPlanSection";
 import { MessagesSection } from "../sections/MessagesSection";
+import { PatientPreferencesSection } from "../sections/PatientPreferencesSection";
 import { ProfileSection } from "../sections/ProfileSection";
 import { ProgressSection } from "../sections/ProgressSection";
 import "../styles/patient.css";
 
-const navigation: { id: PatientSection; label: string; icon: IconName; path: string }[] = [
+const navigation: { id: PatientSection; label: string; mobileLabel?: string; icon: IconName; path: string }[] = [
   { id: "home", label: "Visão geral", icon: "home", path: "/app/paciente" },
   { id: "meal-plan", label: "Plano alimentar", icon: "meal", path: "/app/paciente/plano-alimentar" },
   { id: "progress", label: "Evolução", icon: "chart", path: "/app/paciente/evolucao" },
   { id: "messages", label: "Mensagens", icon: "message", path: "/app/paciente/mensagens" },
+  { id: "preferences", label: "Preferências", mobileLabel: "Prefer.", icon: "target", path: "/app/paciente/preferencias" },
   { id: "profile", label: "Meu perfil", icon: "user", path: "/app/paciente/perfil" },
 ];
 
@@ -22,6 +24,7 @@ const sectionsBySlug: Record<string, PatientSection> = {
   "plano-alimentar": "meal-plan",
   evolucao: "progress",
   mensagens: "messages",
+  preferencias: "preferences",
   perfil: "profile",
 };
 
@@ -29,7 +32,7 @@ export function PatientDashboardPage() {
   const { section: sectionSlug } = useParams<{ section?: string }>();
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const section = sectionSlug ? sectionsBySlug[sectionSlug] : "home";
+  const section = sectionSlug ? sectionsBySlug[sectionSlug] : "preferences";
 
   if (!section) return <Navigate to="/app/paciente" replace />;
 
@@ -98,6 +101,7 @@ export function PatientDashboardPage() {
         {section === "meal-plan" ? <MealPlanSection /> : null}
         {section === "progress" ? <ProgressSection /> : null}
         {section === "messages" ? <MessagesSection /> : null}
+        {section === "preferences" ? <PatientPreferencesSection /> : null}
         {section === "profile" ? <ProfileSection /> : null}
       </section>
 
@@ -111,7 +115,7 @@ export function PatientDashboardPage() {
             onClick={() => navigate(item.path)}
           >
             <PatientIcon name={item.icon} />
-            <small>{item.label.split(" ")[0]}</small>
+            <small>{item.mobileLabel ?? item.label.split(" ")[0]}</small>
           </button>
         ))}
       </nav>

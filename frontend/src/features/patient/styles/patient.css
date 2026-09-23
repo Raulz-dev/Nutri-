@@ -120,7 +120,7 @@
 .profile-data{grid-template-columns:1fr}
 .profile-hero{align-items:flex-start;flex-wrap:wrap}
 .profile-hero .status-pill{margin-left:68px}
-.patient-mobile-nav{position:fixed;z-index:10;right:0;bottom:0;left:0;height:68px;display:grid;grid-template-columns:repeat(5,1fr);background:rgb(255 255 255 / 96%);border-top:1px solid #e9e4ef;box-shadow:0 -8px 25px rgb(55 35 80 / 8%);backdrop-filter:blur(12px)}
+.patient-mobile-nav{position:fixed;z-index:10;right:0;bottom:0;left:0;height:68px;display:grid;grid-template-columns:repeat(6,1fr);background:rgb(255 255 255 / 96%);border-top:1px solid #e9e4ef;box-shadow:0 -8px 25px rgb(55 35 80 / 8%);backdrop-filter:blur(12px)}
 .patient-mobile-nav button{display:grid;place-items:center;align-content:center;gap:3px;color:#8c8496;background:transparent;border:0}
 .patient-mobile-nav button .patient-icon{width:20px;height:20px}
 .patient-mobile-nav button small{font-size:9px}
@@ -305,6 +305,67 @@
 
 @media(max-width:430px){.substitution-modal{padding:24px 20px 28px}
 .substitution-meal{padding:16px}
+}
+
+/* Patient intake */
+.intake-page{display:grid;gap:18px;padding-bottom:12px}
+.intake-intro{display:flex;align-items:center;justify-content:space-between;gap:30px;padding:26px 30px;color:#fff;background:linear-gradient(135deg,#5d2bb6,#8350d3);border-radius:22px;box-shadow:0 15px 36px rgb(91 52 158 / 18%)}
+.intake-intro h2{max-width:680px;margin:7px 0 8px;font-size:clamp(22px,2.5vw,29px);letter-spacing:-.025em}
+.intake-intro p{max-width:720px;margin:0;color:#e8dcf7;font-size:13px;line-height:1.5}
+.intake-intro .card-label{color:#eadfff}
+.intake-intro>span{flex:0 0 auto;padding:9px 12px;color:#fff;background:rgb(255 255 255 / 14%);border:1px solid rgb(255 255 255 / 16%);border-radius:999px;font-size:10px;font-weight:800}
+.intake-card{padding:26px 28px;background:#fff;border:1px solid #e8e2ed;border-radius:22px;box-shadow:0 10px 28px rgb(55 35 80 / 5%)}
+.intake-card>header{display:flex;align-items:flex-start;gap:14px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #eee9f2}
+.intake-card>header>span{width:36px;height:36px;display:grid;flex:0 0 auto;place-items:center;color:#6734bf;background:#f1eafa;border-radius:11px;font-size:11px;font-weight:900}
+.intake-card h2{margin:1px 0 4px;font-size:20px;letter-spacing:-.02em}
+.intake-card header p{margin:0;color:#8d8498;font-size:12px;line-height:1.45}
+.intake-grid{display:grid;gap:20px}
+.intake-grid.two-columns{grid-template-columns:repeat(2,minmax(0,1fr))}
+.intake-grid .full-column{grid-column:1/-1}
+.intake-field{display:grid;align-content:start;gap:8px;color:#4b4056;font-size:12px;font-weight:800}
+.intake-field>span{display:flex;align-items:center;gap:7px}
+.intake-field>span b{color:#b54646}
+.intake-field>span small{margin-left:auto;color:#9a91a4;font-size:9px;font-weight:700;text-transform:uppercase}
+.intake-field input,.intake-field select,.intake-field textarea,.tag-entry input{width:100%;min-height:46px;padding:11px 13px;color:#3d3248;background:#faf8fc;border:1px solid #e4deea;border-radius:12px;font:inherit;font-size:13px;font-weight:500;outline:none}
+.intake-field textarea{resize:vertical;line-height:1.5}
+.intake-field input:focus,.intake-field select:focus,.intake-field textarea:focus,.tag-entry input:focus{background:#fff;border-color:#8a5bd6;box-shadow:0 0 0 3px rgb(109 60 207 / 10%)}
+.intake-field [aria-invalid="true"]{border-color:#b54646;box-shadow:0 0 0 3px rgb(181 70 70 / 9%)}
+.intake-field em{color:#a33c3c;font-size:10px;font-style:normal;font-weight:700}
+.tag-field{display:grid;gap:9px}
+.tag-field>label{color:#4b4056;font-size:12px;font-weight:800}
+.tag-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px}
+.tag-entry button{min-width:92px;padding:0 15px;color:#6532bf;background:#f1eafa;border:0;border-radius:12px;font-size:11px;font-weight:800;cursor:pointer}
+.tag-entry button:disabled{cursor:not-allowed;opacity:.45}
+.tag-field.is-disabled{opacity:.62}
+.tag-list{display:flex;flex-wrap:wrap;gap:7px;margin:1px 0 0;padding:0;list-style:none}
+.tag-list li{display:flex;align-items:center;gap:6px;padding:6px 7px 6px 10px;color:#5f2db3;background:#f2ecfa;border:1px solid #e6daf5;border-radius:999px;font-size:11px;font-weight:800}
+.tag-list button{width:20px;height:20px;display:grid;place-items:center;padding:0;color:#6d3ccf;background:rgb(255 255 255 / 70%);border:0;border-radius:50%;font-size:15px;line-height:1;cursor:pointer}
+.restriction-field{display:grid;gap:10px}
+.none-check{display:flex;align-items:center;gap:8px;width:max-content;color:#706778;font-size:11px;font-weight:700;cursor:pointer}
+.none-check input{width:16px;height:16px;margin:0;accent-color:#6d3ccf}
+.intake-actions{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 24px;background:#fff;border:1px solid #e8e2ed;border-radius:18px;box-shadow:0 10px 28px rgb(55 35 80 / 5%)}
+.intake-actions>div{min-height:18px}
+.intake-actions>button{min-height:46px;padding:0 22px;color:#fff;background:#6d3ccf;border:0;border-radius:13px;font-size:12px;font-weight:900;cursor:pointer}
+.intake-actions>button:hover{background:#5d2db5}
+.intake-feedback{margin:0;font-size:12px;font-weight:800}
+.intake-feedback.is-success{color:#247462}
+.intake-feedback.is-error{color:#a33c3c}
+
+@media(max-width:700px){.intake-page{gap:14px}
+.intake-intro{display:grid;padding:22px 19px;border-radius:20px}
+.intake-intro>span{width:max-content}
+.intake-card{padding:21px 18px;border-radius:20px}
+.intake-card>header{margin-bottom:20px;padding-bottom:17px}
+.intake-grid.two-columns{grid-template-columns:1fr}
+.intake-grid .full-column{grid-column:auto}
+.intake-actions{align-items:stretch;display:grid;padding:16px}
+.intake-actions>button{width:100%}
+}
+
+@media(max-width:430px){.patient-mobile-nav button small{font-size:8px}
+.patient-mobile-nav button .patient-icon{width:18px;height:18px}
+.tag-entry{grid-template-columns:1fr}
+.tag-entry button{min-height:40px}
 }
 
 

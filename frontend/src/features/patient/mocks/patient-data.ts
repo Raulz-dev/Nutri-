@@ -52,4 +52,4 @@ export const patientMock = {
   ],
 };
 
-export type PatientSection = "home" | "meal-plan" | "progress" | "messages" | "profile";
+export type PatientSection = "home" | "meal-plan" | "progress" | "messages" | "preferences" | "profile";

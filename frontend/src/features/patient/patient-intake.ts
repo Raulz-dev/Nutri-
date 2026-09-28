@@ -58,12 +58,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function text(value: unknown) {
-  return typeof value === "string" ? value : "";
+function text(value: unknown, limit?: number) {
+  if (typeof value !== "string") return "";
+  return typeof limit === "number" ? value.slice(0, limit) : value;
 }
 
-function tags(value: unknown) {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+function tags(value: unknown, limit: number) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string").slice(0, limit).map((item) => item.slice(0, 80))
+    : [];
 }
 
 function flag(value: unknown) {
@@ -86,42 +89,42 @@ export function readPatientIntake(): PatientIntake {
 
     return {
       version: 1,
-      goal: { primary: text(goal.primary) as PatientGoal, details: text(goal.details) },
+      goal: { primary: text(goal.primary) as PatientGoal, details: text(goal.details, 200) },
       food: {
-        liked: tags(food.liked),
-        disliked: tags(food.disliked),
-        avoided: tags(food.avoided),
+        liked: tags(food.liked, 20),
+        disliked: tags(food.disliked, 20),
+        avoided: tags(food.avoided, 20),
         pattern: text(food.pattern) as DietaryPattern,
-        otherPattern: text(food.otherPattern),
+        otherPattern: text(food.otherPattern, 80),
       },
       restrictions: {
-        allergies: tags(restrictions.allergies),
+        allergies: tags(restrictions.allergies, 10),
         noAllergies: flag(restrictions.noAllergies),
-        intolerances: tags(restrictions.intolerances),
+        intolerances: tags(restrictions.intolerances, 10),
         noIntolerances: flag(restrictions.noIntolerances),
-        other: text(restrictions.other),
+        other: text(restrictions.other, 300),
       },
       health: {
-        conditions: tags(health.conditions),
-        medications: tags(health.medications),
-        supplements: tags(health.supplements),
-        digestiveSymptoms: text(health.digestiveSymptoms),
+        conditions: tags(health.conditions, 10),
+        medications: tags(health.medications, 20),
+        supplements: tags(health.supplements, 10),
+        digestiveSymptoms: text(health.digestiveSymptoms, 300),
       },
       routine: {
         mealsPerDay: text(routine.mealsPerDay),
-        eatingSchedule: text(routine.eatingSchedule),
+        eatingSchedule: text(routine.eatingSchedule, 150),
         waterLiters: text(routine.waterLiters),
         eatingOutFrequency: text(routine.eatingOutFrequency),
-        difficulties: text(routine.difficulties),
+        difficulties: text(routine.difficulties, 300),
       },
       lifestyle: {
-        activityType: text(lifestyle.activityType),
+        activityType: text(lifestyle.activityType, 100),
         activityFrequency: text(lifestyle.activityFrequency),
         sleepHours: text(lifestyle.sleepHours),
         alcohol: text(lifestyle.alcohol),
         smoking: text(lifestyle.smoking),
       },
-      observations: text(value.observations),
+      observations: text(value.observations, 500),
     };
   } catch {
     return structuredClone(emptyPatientIntake);

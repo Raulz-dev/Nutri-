@@ -11,7 +11,6 @@ import { ProtectedRoute } from "../routes/ProtectedRoute";
 export function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<PatientDashboardPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
       <Route path="/redefinir-senha" element={<ResetPasswordPage />} />

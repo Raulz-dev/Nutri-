@@ -32,7 +32,7 @@ export function PatientDashboardPage() {
   const { section: sectionSlug } = useParams<{ section?: string }>();
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const section = sectionSlug ? sectionsBySlug[sectionSlug] : "preferences";
+  const section = sectionSlug ? sectionsBySlug[sectionSlug] : "home";
 
   if (!section) return <Navigate to="/app/paciente" replace />;
 

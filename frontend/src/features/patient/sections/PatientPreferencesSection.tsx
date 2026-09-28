@@ -67,16 +67,16 @@ export function PatientPreferencesSection() {
             </select>
           </Field>
           <Field label="Conte mais sobre seu objetivo" hint="Opcional">
-            <input value={intake.goal.details} onChange={(event) => updateGroup("goal", { details: event.target.value })} placeholder="Ex.: melhorar minha disposição" />
+            <input maxLength={200} value={intake.goal.details} onChange={(event) => updateGroup("goal", { details: event.target.value })} placeholder="Ex.: melhorar minha disposição" />
           </Field>
         </div>
       </IntakeCard>
 
       <IntakeCard number="02" title="Preferências alimentares" description="Ajude a tornar o plano mais próximo da sua realidade.">
         <div className="intake-grid">
-          <TagInput label="Alimentos que você gosta" placeholder="Ex.: banana" values={intake.food.liked} onChange={(liked) => updateGroup("food", { liked })} />
-          <TagInput label="Alimentos que você não gosta" placeholder="Ex.: beterraba" values={intake.food.disliked} onChange={(disliked) => updateGroup("food", { disliked })} />
-          <TagInput label="Alimentos que prefere evitar" placeholder="Ex.: frituras" values={intake.food.avoided} onChange={(avoided) => updateGroup("food", { avoided })} />
+          <TagInput label="Alimentos que você gosta" placeholder="Ex.: banana" values={intake.food.liked} maxItems={20} onChange={(liked) => updateGroup("food", { liked })} />
+          <TagInput label="Alimentos que você não gosta" placeholder="Ex.: beterraba" values={intake.food.disliked} maxItems={20} onChange={(disliked) => updateGroup("food", { disliked })} />
+          <TagInput label="Alimentos que prefere evitar" placeholder="Ex.: frituras" values={intake.food.avoided} maxItems={20} onChange={(avoided) => updateGroup("food", { avoided })} />
           <div className="intake-grid two-columns">
             <Field label="Padrão alimentar">
               <select value={intake.food.pattern} onChange={(event) => updateGroup("food", { pattern: event.target.value as PatientIntake["food"]["pattern"] })}>
@@ -90,7 +90,7 @@ export function PatientPreferencesSection() {
             </Field>
             {intake.food.pattern === "other" ? (
               <Field label="Qual padrão?">
-                <input value={intake.food.otherPattern} onChange={(event) => updateGroup("food", { otherPattern: event.target.value })} placeholder="Descreva seu padrão alimentar" />
+                <input maxLength={80} value={intake.food.otherPattern} onChange={(event) => updateGroup("food", { otherPattern: event.target.value })} placeholder="Descreva seu padrão alimentar" />
               </Field>
             ) : null}
           </div>
@@ -103,6 +103,7 @@ export function PatientPreferencesSection() {
             label="Alergias alimentares"
             placeholder="Ex.: amendoim"
             values={intake.restrictions.allergies}
+            maxItems={10}
             hasNone={intake.restrictions.noAllergies}
             onValuesChange={(allergies) => updateGroup("restrictions", { allergies })}
             onNoneChange={(noAllergies) => updateGroup("restrictions", { noAllergies, allergies: noAllergies ? [] : intake.restrictions.allergies })}
@@ -111,23 +112,24 @@ export function PatientPreferencesSection() {
             label="Intolerâncias"
             placeholder="Ex.: lactose"
             values={intake.restrictions.intolerances}
+            maxItems={10}
             hasNone={intake.restrictions.noIntolerances}
             onValuesChange={(intolerances) => updateGroup("restrictions", { intolerances })}
             onNoneChange={(noIntolerances) => updateGroup("restrictions", { noIntolerances, intolerances: noIntolerances ? [] : intake.restrictions.intolerances })}
           />
           <Field label="Outras restrições">
-            <textarea rows={3} value={intake.restrictions.other} onChange={(event) => updateGroup("restrictions", { other: event.target.value })} placeholder="Restrições religiosas, culturais ou outras informações" />
+            <textarea maxLength={300} rows={3} value={intake.restrictions.other} onChange={(event) => updateGroup("restrictions", { other: event.target.value })} placeholder="Restrições religiosas, culturais ou outras informações" />
           </Field>
         </div>
       </IntakeCard>
 
       <IntakeCard number="04" title="Saúde" description="Informe condições e cuidados relevantes para sua alimentação.">
         <div className="intake-grid">
-          <TagInput label="Condições de saúde" placeholder="Ex.: hipertensão" values={intake.health.conditions} onChange={(conditions) => updateGroup("health", { conditions })} />
-          <TagInput label="Medicamentos em uso" placeholder="Digite o medicamento" values={intake.health.medications} onChange={(medications) => updateGroup("health", { medications })} />
-          <TagInput label="Suplementos" placeholder="Ex.: creatina" values={intake.health.supplements} onChange={(supplements) => updateGroup("health", { supplements })} />
+          <TagInput label="Condições de saúde" placeholder="Ex.: hipertensão" values={intake.health.conditions} maxItems={10} onChange={(conditions) => updateGroup("health", { conditions })} />
+          <TagInput label="Medicamentos em uso" placeholder="Digite o medicamento" values={intake.health.medications} maxItems={20} onChange={(medications) => updateGroup("health", { medications })} />
+          <TagInput label="Suplementos" placeholder="Ex.: creatina" values={intake.health.supplements} maxItems={10} onChange={(supplements) => updateGroup("health", { supplements })} />
           <Field label="Sintomas ou desconfortos digestivos">
-            <textarea rows={3} value={intake.health.digestiveSymptoms} onChange={(event) => updateGroup("health", { digestiveSymptoms: event.target.value })} placeholder="Ex.: azia, inchaço ou desconforto após refeições" />
+            <textarea maxLength={300} rows={3} value={intake.health.digestiveSymptoms} onChange={(event) => updateGroup("health", { digestiveSymptoms: event.target.value })} placeholder="Ex.: azia, inchaço ou desconforto após refeições" />
           </Field>
         </div>
       </IntakeCard>
@@ -150,10 +152,10 @@ export function PatientPreferencesSection() {
             </select>
           </Field>
           <Field label="Horários e rotina">
-            <input value={intake.routine.eatingSchedule} onChange={(event) => updateGroup("routine", { eatingSchedule: event.target.value })} placeholder="Ex.: almoço às 12h e jantar às 20h" />
+            <input maxLength={150} value={intake.routine.eatingSchedule} onChange={(event) => updateGroup("routine", { eatingSchedule: event.target.value })} placeholder="Ex.: almoço às 12h e jantar às 20h" />
           </Field>
           <Field label="Principais dificuldades" className="full-column">
-            <textarea rows={3} value={intake.routine.difficulties} onChange={(event) => updateGroup("routine", { difficulties: event.target.value })} placeholder="Ex.: pouco tempo para cozinhar durante a semana" />
+            <textarea maxLength={300} rows={3} value={intake.routine.difficulties} onChange={(event) => updateGroup("routine", { difficulties: event.target.value })} placeholder="Ex.: pouco tempo para cozinhar durante a semana" />
           </Field>
         </div>
       </IntakeCard>
@@ -161,7 +163,7 @@ export function PatientPreferencesSection() {
       <IntakeCard number="06" title="Estilo de vida" description="Hábitos que ajudam a contextualizar seu acompanhamento.">
         <div className="intake-grid two-columns">
           <Field label="Atividade física">
-            <input value={intake.lifestyle.activityType} onChange={(event) => updateGroup("lifestyle", { activityType: event.target.value })} placeholder="Ex.: musculação e caminhada" />
+            <input maxLength={100} value={intake.lifestyle.activityType} onChange={(event) => updateGroup("lifestyle", { activityType: event.target.value })} placeholder="Ex.: musculação e caminhada" />
           </Field>
           <Field label="Frequência semanal">
             <select value={intake.lifestyle.activityFrequency} onChange={(event) => updateGroup("lifestyle", { activityFrequency: event.target.value })}>
@@ -198,6 +200,7 @@ export function PatientPreferencesSection() {
       <IntakeCard number="07" title="Observações" description="Use este espaço para qualquer outra informação importante.">
         <Field label="O que mais você gostaria de contar?">
           <textarea
+            maxLength={500}
             rows={5}
             value={intake.observations}
             onChange={(event) => {
@@ -242,10 +245,10 @@ function Field({ label, hint, error, required, className = "", children }: { lab
   );
 }
 
-function RestrictionTags({ label, placeholder, values, hasNone, onValuesChange, onNoneChange }: { label: string; placeholder: string; values: string[]; hasNone: boolean; onValuesChange: (values: string[]) => void; onNoneChange: (value: boolean) => void }) {
+function RestrictionTags({ label, placeholder, values, maxItems, hasNone, onValuesChange, onNoneChange }: { label: string; placeholder: string; values: string[]; maxItems: number; hasNone: boolean; onValuesChange: (values: string[]) => void; onNoneChange: (value: boolean) => void }) {
   return (
     <div className="restriction-field">
-      <TagInput label={label} placeholder={placeholder} values={values} disabled={hasNone} onChange={onValuesChange} />
+      <TagInput label={label} placeholder={placeholder} values={values} maxItems={maxItems} disabled={hasNone} onChange={onValuesChange} />
       <label className="none-check">
         <input type="checkbox" checked={hasNone} onChange={(event) => onNoneChange(event.target.checked)} />
         Não possuo
@@ -254,14 +257,24 @@ function RestrictionTags({ label, placeholder, values, hasNone, onValuesChange, 
   );
 }
 
-function TagInput({ label, placeholder, values, disabled = false, onChange }: { label: string; placeholder: string; values: string[]; disabled?: boolean; onChange: (values: string[]) => void }) {
+function TagInput({ label, placeholder, values, maxItems, disabled = false, onChange }: { label: string; placeholder: string; values: string[]; maxItems: number; disabled?: boolean; onChange: (values: string[]) => void }) {
   const [draft, setDraft] = useState("");
+  const [message, setMessage] = useState("");
 
   function addTag() {
     const value = draft.trim();
-    if (!value || values.some((item) => item.localeCompare(value, "pt-BR", { sensitivity: "accent" }) === 0)) return;
+    if (!value) return;
+    if (values.length >= maxItems) {
+      setMessage(`Limite de ${maxItems} itens atingido.`);
+      return;
+    }
+    if (values.some((item) => item.localeCompare(value, "pt-BR", { sensitivity: "accent" }) === 0)) {
+      setMessage("Este item já foi adicionado.");
+      return;
+    }
     onChange([...values, value]);
     setDraft("");
+    setMessage("");
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -272,15 +285,16 @@ function TagInput({ label, placeholder, values, disabled = false, onChange }: { 
 
   return (
     <div className={`tag-field${disabled ? " is-disabled" : ""}`}>
-      <label>{label}</label>
+      <div className="tag-field-heading"><label>{label}</label><small>{values.length}/{maxItems}</small></div>
       <div className="tag-entry">
-        <input disabled={disabled} value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={handleKeyDown} placeholder={disabled ? "Marcado como não possuo" : placeholder} />
-        <button type="button" disabled={disabled || !draft.trim()} onClick={addTag}>Adicionar</button>
+        <input maxLength={80} disabled={disabled || values.length >= maxItems} value={draft} onChange={(event) => { setDraft(event.target.value); setMessage(""); }} onKeyDown={handleKeyDown} placeholder={disabled ? "Marcado como não possuo" : values.length >= maxItems ? `Limite de ${maxItems} itens atingido` : placeholder} />
+        <button type="button" disabled={disabled || values.length >= maxItems || !draft.trim()} onClick={addTag}>Adicionar</button>
       </div>
+      {message ? <p className="tag-message" role="status">{message}</p> : null}
       {values.length ? (
         <ul className="tag-list" aria-label={`${label} adicionados`}>
           {values.map((value) => (
-            <li key={value}>{value}<button type="button" onClick={() => onChange(values.filter((item) => item !== value))} aria-label={`Remover ${value}`}>×</button></li>
+            <li key={value}>{value}<button type="button" onClick={() => { onChange(values.filter((item) => item !== value)); setMessage(""); }} aria-label={`Remover ${value}`}>×</button></li>
           ))}
         </ul>
       ) : null}

@@ -1,3 +1,4 @@
+import { AuthLayout } from "../layouts/AuthLayout";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
@@ -34,53 +35,37 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <main className="login-page">
-      <section className="login-card" aria-labelledby="forgot-title">
-        <div className="login-card__content">
-          <div className="brand" aria-label="Nutri Mais">
-            <span>Nutri</span>
-            <span className="brand__symbol">+</span>
+    <AuthLayout
+      titleId="forgot-title"
+      eyebrow="Recupere seu acesso"
+      title="Esqueceu sua senha?"
+      description="Informe seu e-mail e enviaremos as instruções para criar uma nova senha."
+      badge="Continue em movimento"
+      visualText="Seu acompanhamento continua quando você voltar."
+    >
+      <form className="login-form" onSubmit={handleSubmit} noValidate>
+        {message && (
+          <div className="login-form__success" role="status">
+            {message}
           </div>
-
-          <div className="login-card__heading">
-            <span className="eyebrow">Recupere seu acesso</span>
-            <h1 id="forgot-title">Esqueceu sua senha?</h1>
-            <p>Informe seu e-mail e enviaremos as instruções para criar uma nova senha.</p>
-          </div>
-
-          <form className="login-form" onSubmit={handleSubmit} noValidate>
-            {message && (
-              <div className="login-form__success" role="status">
-                {message}
-              </div>
-            )}
-            <Input
-              label="E-mail"
-              type="email"
-              autoComplete="email"
-              required
-              placeholder="email@email.com"
-              value={email}
-              error={error}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-            <Button type="submit" loading={loading} loadingLabel="Enviando...">
-              Enviar instruções
-            </Button>
-            <Link className="back-link" to="/login">
-              Voltar para o login
-            </Link>
-          </form>
-        </div>
-
-        <div className="login-card__visual" aria-hidden="true">
-          <img src="/assets/runner-health.webp" alt="" />
-          <div className="visual-copy">
-            <span className="visual-copy__badge">Continue em movimento</span>
-            <p>Seu acompanhamento continua quando você voltar.</p>
-          </div>
-        </div>
-      </section>
-    </main>
+        )}
+        <Input
+          label="E-mail"
+          type="email"
+          autoComplete="email"
+          required
+          placeholder="email@email.com"
+          value={email}
+          error={error}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <Button type="submit" loading={loading} loadingLabel="Enviando...">
+          Enviar instruções
+        </Button>
+        <Link className="back-link" to="/login">
+          Voltar para o login
+        </Link>
+      </form>
+    </AuthLayout>
   );
 }

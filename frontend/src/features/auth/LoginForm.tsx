@@ -38,8 +38,9 @@ export function LoginForm() {
 
     setLoading(true);
     try {
-      await login({ email: email.trim().toLowerCase(), password });
-      navigate("/app/paciente", { replace: true });
+      const user = await login({ email: email.trim().toLowerCase(), password });
+      const destination = user.role === "admin" ? "/app/admin" : user.role === "patient" ? "/app/paciente" : "/app/nutricionista";
+      navigate(destination, { replace: true });
     } catch (error) {
       setRequestError(error instanceof ApiError ? error.message : "Não foi possível conectar ao servidor.");
     } finally {

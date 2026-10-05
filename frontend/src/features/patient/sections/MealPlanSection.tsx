@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useModalBehavior } from "../../../hooks/useModalBehavior";
+import { useRef, useState } from "react";
 
 import { PanelHeader } from "../components/PanelHeader";
 import { PatientIcon } from "../components/PatientIcon";
-import { patientMock } from "../mocks/patient-data";
+import { usePatientData } from "../../demo/PatientContext";
 
 export function MealPlanSection() {
-  const [selectedMeal, setSelectedMeal] = useState<(typeof patientMock.meals)[number] | null>(null);
+  const { view: patientData } = usePatientData();
+  const [selectedMeal, setSelectedMeal] = useState<(typeof patientData.meals)[number] | null>(null);
   const [showSubstitutions, setShowSubstitutions] = useState(false);
   const mealDialog = useRef<HTMLElement>(null);
   const substitutionDialog = useRef<HTMLElement>(null);
-  const dailyMacros = patientMock.meals.reduce(
+  const dailyMacros = patientData.meals.reduce(
     (total, meal) => ({
       calories: total.calories + Number.parseFloat(meal.macros.calories),
       protein: total.protein + Number.parseFloat(meal.macros.protein),
@@ -19,73 +21,42 @@ export function MealPlanSection() {
     { calories: 0, protein: 0, carbs: 0, fats: 0 },
   );
 
-  useEffect(() => {
-    if (!selectedMeal) return;
-    const dialog = showSubstitutions ? substitutionDialog.current : mealDialog.current;
-    if (!dialog) return;
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
-    const buttons = Array.from(dialog.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
-    buttons[0]?.focus();
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Tab") {
-        const first = buttons[0];
-        const last = buttons[buttons.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-        return;
-      }
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      if (showSubstitutions) setShowSubstitutions(false);
-      else setSelectedMeal(null);
-    }
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
-      previousFocus?.focus();
-    };
-  }, [selectedMeal, showSubstitutions]);
+  useModalBehavior(mealDialog, closeMeal, Boolean(selectedMeal));
+  useModalBehavior(substitutionDialog, () => setShowSubstitutions(false), showSubstitutions);
 
   function closeMeal() {
     setShowSubstitutions(false);
     setSelectedMeal(null);
   }
 
+  if (!patientData.meals.length) return <article className="patient-panel section-panel"><h2>Nenhum plano alimentar ativo</h2><p>Seu plano aparecerá aqui após a publicação pelo nutricionista.</p></article>;
+
   return (
     <div className="meal-plan-page">
       <section className="meal-plan-hero">
         <div>
           <span className="card-label">Plano alimentar</span>
-          <h2>{patientMock.mealPlan.title}</h2>
-          <p>{patientMock.nutritionist}</p>
+          <h2>{patientData.mealPlan.title}</h2>
+          <p>{patientData.nutritionist}</p>
         </div>
         <dl>
           <div>
             <dt>Período</dt>
-            <dd>{patientMock.mealPlan.startDate} — {patientMock.mealPlan.validUntil}</dd>
+            <dd>{patientData.mealPlan.startDate} — {patientData.mealPlan.validUntil}</dd>
           </div>
           <div>
             <dt><PatientIcon name="water" /> Meta de água</dt>
-            <dd>{patientMock.mealPlan.dailyWaterGoal}/dia</dd>
+            <dd>{patientData.mealPlan.dailyWaterGoal}/dia</dd>
           </div>
         </dl>
       </section>
 
+      {patientData.mealPlan.guidance && <p className="patient-panel section-panel">{patientData.mealPlan.guidance}</p>}
       <section className="meal-plan-content">
         <div className="meal-schedule">
           <PanelHeader eyebrow="Rotina diária" title="Refeições e quantidades" />
           <div className="meal-cards">
-            {patientMock.meals.map((meal) => (
+            {patientData.meals.map((meal) => (
               <button className="meal-card meal-card-button" key={meal.time} type="button" onClick={() => setSelectedMeal(meal)}>
                 <time>{meal.time}</time>
                 <span className="meal-card-title">

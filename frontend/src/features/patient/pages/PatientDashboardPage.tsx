@@ -1,8 +1,10 @@
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { PatientContext, usePatientData } from "../../demo/PatientContext";
+import { useDemo, demoUsers, initials } from "../../demo/store";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "../../auth/useAuth";
 import { PatientIcon, type IconName } from "../components/PatientIcon";
-import { patientMock, type PatientSection } from "../mocks/patient-data";
+import { type PatientSection } from "../mocks/patient-data";
 import { HomeSection } from "../sections/HomeSection";
 import { MealPlanSection } from "../sections/MealPlanSection";
 import { MessagesSection } from "../sections/MessagesSection";
@@ -29,17 +31,31 @@ const sectionsBySlug: Record<string, PatientSection> = {
 };
 
 export function PatientDashboardPage() {
+  const { patientId } = useParams();
+  const { currentUser } = useAuth();
+  const state = useDemo();
+  if (patientId && (!state.links.some(l => l.patientId === patientId && l.nutritionistId === currentUser?.id) || !demoUsers(state).some(u => u.id === patientId))) return <Navigate to="/app/nutricionista/pacientes" replace />;
+  return <PatientContext.Provider value={patientId ?? null}><PatientDashboardContent key={patientId ?? currentUser?.id}/></PatientContext.Provider>;
+}
+
+function PatientDashboardContent() {
+  const { view: patientData, patientId, state } = usePatientData();
+  const { patientId: previewId } = useParams();
+  const basePath = previewId ? `/app/nutricionista/pacientes/${previewId}/previa` : "/app/paciente";
+  const menu = navigation.map(item => ({ ...item, path: item.path.replace("/app/paciente", basePath) }));
+  const conversationId = state.links.find(l => l.patientId === patientId)?.conversationId;
+  const unread = state.conversations.find(c => c.id === conversationId)?.messages.filter(m => m.sender === "nutritionist" && !m.read).length ?? 0;
   const { section: sectionSlug } = useParams<{ section?: string }>();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const section = sectionSlug ? sectionsBySlug[sectionSlug] : "home";
 
-  if (!section) return <Navigate to="/app/paciente" replace />;
+  if (!section) return <Navigate to={basePath} replace />;
 
   const hasFixedView = section === "home" || section === "profile" || section === "messages";
 
   function navigateToSection(target: PatientSection) {
-    const item = navigation.find(({ id }) => id === target);
+    const item = menu.find(({ id }) => id === target);
     if (item) navigate(item.path);
   }
 
@@ -57,7 +73,7 @@ export function PatientDashboardPage() {
         </div>
         <div className="patient-menu-label">Menu</div>
         <nav aria-label="Área do paciente">
-          {navigation.map((item) => (
+          {menu.map((item) => (
             <button
               key={item.id}
               aria-label={item.label}
@@ -68,14 +84,14 @@ export function PatientDashboardPage() {
             >
               <PatientIcon name={item.icon} />
               <span>{item.label}</span>
-              {item.id === "messages" ? <b>1</b> : null}
+              {item.id === "messages" && unread > 0 ? <b>{unread}</b> : null}
             </button>
           ))}
         </nav>
         <div className="sidebar-user">
-          <span>CF</span>
+          <span>{initials(patientData.fullName)}</span>
           <div>
-            <strong>{patientMock.fullName}</strong>
+            <strong>{patientData.fullName}</strong>
             <small>Paciente</small>
           </div>
         </div>
@@ -86,14 +102,15 @@ export function PatientDashboardPage() {
       </aside>
 
       <section className={`patient-content${hasFixedView ? " has-fixed-view" : ""}${section === "messages" ? " has-chat" : ""}`}>
+        {previewId && <div className="patient-preview-notice"><span>Prévia demonstrativa · {patientData.fullName}</span><Link to={`/app/nutricionista/pacientes/${previewId}`}>Voltar ao acompanhamento</Link></div>}
         <header className="patient-header">
           <div>
-            <span className="patient-kicker">{section === "home" ? "Terça-feira, 24 de setembro" : "Área do paciente"}</span>
-            <h1>{section === "home" ? `Olá, ${patientMock.name}` : navigation.find((item) => item.id === section)?.label}</h1>
+            <span className="patient-kicker">{section === "home" ? new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) : "Área do paciente"}</span>
+            <h1>{section === "home" ? `Olá, ${patientData.name}` : menu.find((item) => item.id === section)?.label}</h1>
             {section === "home" ? <p>Veja como está seu acompanhamento hoje.</p> : null}
           </div>
           <div className="header-actions">
-            <button className="patient-avatar" type="button" onClick={() => navigateToSection("profile")} aria-label="Abrir perfil">CF</button>
+            <button className="patient-avatar" type="button" onClick={() => navigateToSection("profile")} aria-label="Abrir perfil">{initials(patientData.fullName)}</button>
           </div>
         </header>
 
@@ -106,7 +123,7 @@ export function PatientDashboardPage() {
       </section>
 
       <nav className="patient-mobile-nav" aria-label="Navegação móvel">
-        {navigation.map((item) => (
+        {menu.map((item) => (
           <button
             key={item.id}
             aria-current={section === item.id ? "page" : undefined}

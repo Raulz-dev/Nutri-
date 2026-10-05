@@ -1,15 +1,29 @@
-import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { type PatientIntake, readPatientIntake, savePatientIntake } from "../patient-intake";
+import { type PatientIntake, emptyPatientIntake } from "../patient-intake";
+import { usePatientData } from "../../demo/PatientContext";
+import { savePatientPreferences } from "../../demo/actions";
+import { useAuth } from "../../auth/useAuth";
+
+import { Field, IntakeCard, RestrictionTags, TagInput } from "../components/preferences/IntakeFields";
 
 type IntakeGroup = "goal" | "food" | "restrictions" | "health" | "routine" | "lifestyle";
 type SaveStatus = "idle" | "success" | "error";
+type NumericErrors = Partial<Record<"mealsPerDay" | "waterLiters" | "sleepHours", string>>;
 
 export function PatientPreferencesSection() {
-  const [intake, setIntake] = useState(readPatientIntake);
+  const { state, patientId } = usePatientData();
+  const { currentUser } = useAuth();
+  const [intake, setIntake] = useState(() => structuredClone(state.intakes[patientId] ?? emptyPatientIntake));
+  const savedIntake = JSON.stringify(state.intakes[patientId] ?? emptyPatientIntake);
+  useEffect(() => { setIntake(JSON.parse(savedIntake) as PatientIntake); }, [savedIntake]);
   const [goalError, setGoalError] = useState(false);
+  const [numericErrors, setNumericErrors] = useState<NumericErrors>({});
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const goalRef = useRef<HTMLSelectElement>(null);
+  const mealsRef = useRef<HTMLInputElement>(null);
+  const waterRef = useRef<HTMLInputElement>(null);
+  const sleepRef = useRef<HTMLInputElement>(null);
 
   function updateGroup<K extends IntakeGroup>(group: K, values: Partial<PatientIntake[K]>) {
     setIntake((current) => ({ ...current, [group]: { ...current[group], ...values } }));
@@ -18,16 +32,26 @@ export function PatientPreferencesSection() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!intake.goal.primary) {
-      setGoalError(true);
+    const nextNumericErrors: NumericErrors = {
+      mealsPerDay: validateOptionalNumber(intake.routine.mealsPerDay, 1, 12, 1, "Informe entre 1 e 12 refeições inteiras."),
+      waterLiters: validateOptionalNumber(intake.routine.waterLiters, 0, 15, 0.1, "Informe entre 0 e 15 litros, em passos de 0,1."),
+      sleepHours: validateOptionalNumber(intake.lifestyle.sleepHours, 0, 24, 0.5, "Informe entre 0 e 24 horas, em passos de 0,5."),
+    };
+    const hasGoalError = !intake.goal.primary;
+    const hasNumericError = Object.values(nextNumericErrors).some(Boolean);
+
+    setGoalError(hasGoalError);
+    setNumericErrors(nextNumericErrors);
+    if (hasGoalError || hasNumericError) {
       setSaveStatus("idle");
-      goalRef.current?.focus();
+      if (hasGoalError) goalRef.current?.focus();
+      else (nextNumericErrors.mealsPerDay ? mealsRef : nextNumericErrors.waterLiters ? waterRef : sleepRef).current?.focus();
       return;
     }
 
     setGoalError(false);
     try {
-      savePatientIntake(intake);
+      savePatientPreferences(patientId, intake, currentUser!);
       setSaveStatus("success");
     } catch {
       setSaveStatus("error");
@@ -47,7 +71,7 @@ export function PatientPreferencesSection() {
 
       <IntakeCard number="01" title="Seu objetivo" description="Qual é o principal resultado que você busca?">
         <div className="intake-grid two-columns">
-          <Field label="Objetivo principal" required error={goalError ? "Selecione um objetivo para continuar." : undefined}>
+        <Field label="Objetivo principal" required error={goalError ? "Selecione um objetivo para continuar." : undefined}>
             <select
               ref={goalRef}
               value={intake.goal.primary}
@@ -136,11 +160,11 @@ export function PatientPreferencesSection() {
 
       <IntakeCard number="05" title="Rotina alimentar" description="Como a alimentação se encaixa no seu dia?">
         <div className="intake-grid two-columns">
-          <Field label="Refeições por dia">
-            <input type="number" min="1" max="12" value={intake.routine.mealsPerDay} onChange={(event) => updateGroup("routine", { mealsPerDay: event.target.value })} placeholder="Ex.: 5" />
+          <Field label="Refeições por dia" error={numericErrors.mealsPerDay}>
+            <input ref={mealsRef} type="number" min="1" max="12" aria-invalid={Boolean(numericErrors.mealsPerDay)} value={intake.routine.mealsPerDay} onChange={(event) => { updateGroup("routine", { mealsPerDay: event.target.value }); setNumericErrors((current) => ({ ...current, mealsPerDay: undefined })); }} placeholder="Ex.: 5" />
           </Field>
-          <Field label="Água por dia">
-            <input type="number" min="0" max="15" step="0.1" value={intake.routine.waterLiters} onChange={(event) => updateGroup("routine", { waterLiters: event.target.value })} placeholder="Litros" />
+          <Field label="Água por dia" error={numericErrors.waterLiters}>
+            <input ref={waterRef} type="number" min="0" max="15" step="0.1" aria-invalid={Boolean(numericErrors.waterLiters)} value={intake.routine.waterLiters} onChange={(event) => { updateGroup("routine", { waterLiters: event.target.value }); setNumericErrors((current) => ({ ...current, waterLiters: undefined })); }} placeholder="Litros" />
           </Field>
           <Field label="Refeições fora de casa">
             <select value={intake.routine.eatingOutFrequency} onChange={(event) => updateGroup("routine", { eatingOutFrequency: event.target.value })}>
@@ -174,8 +198,8 @@ export function PatientPreferencesSection() {
               <option value="5-plus">5 vezes ou mais</option>
             </select>
           </Field>
-          <Field label="Horas de sono">
-            <input type="number" min="0" max="24" step="0.5" value={intake.lifestyle.sleepHours} onChange={(event) => updateGroup("lifestyle", { sleepHours: event.target.value })} placeholder="Ex.: 8" />
+          <Field label="Horas de sono" error={numericErrors.sleepHours}>
+            <input ref={sleepRef} type="number" min="0" max="24" step="0.5" aria-invalid={Boolean(numericErrors.sleepHours)} value={intake.lifestyle.sleepHours} onChange={(event) => { updateGroup("lifestyle", { sleepHours: event.target.value }); setNumericErrors((current) => ({ ...current, sleepHours: undefined })); }} placeholder="Ex.: 8" />
           </Field>
           <Field label="Consumo de álcool">
             <select value={intake.lifestyle.alcohol} onChange={(event) => updateGroup("lifestyle", { alcohol: event.target.value })}>
@@ -223,81 +247,9 @@ export function PatientPreferencesSection() {
   );
 }
 
-function IntakeCard({ number, title, description, children }: { number: string; title: string; description: string; children: React.ReactNode }) {
-  return (
-    <section className="intake-card">
-      <header>
-        <span>{number}</span>
-        <div><h2>{title}</h2><p>{description}</p></div>
-      </header>
-      {children}
-    </section>
-  );
-}
-
-function Field({ label, hint, error, required, className = "", children }: { label: string; hint?: string; error?: string; required?: boolean; className?: string; children: React.ReactNode }) {
-  return (
-    <label className={`intake-field ${className}`}>
-      <span>{label}{required ? <b> *</b> : null}{hint ? <small>{hint}</small> : null}</span>
-      {children}
-      {error ? <em>{error}</em> : null}
-    </label>
-  );
-}
-
-function RestrictionTags({ label, placeholder, values, maxItems, hasNone, onValuesChange, onNoneChange }: { label: string; placeholder: string; values: string[]; maxItems: number; hasNone: boolean; onValuesChange: (values: string[]) => void; onNoneChange: (value: boolean) => void }) {
-  return (
-    <div className="restriction-field">
-      <TagInput label={label} placeholder={placeholder} values={values} maxItems={maxItems} disabled={hasNone} onChange={onValuesChange} />
-      <label className="none-check">
-        <input type="checkbox" checked={hasNone} onChange={(event) => onNoneChange(event.target.checked)} />
-        Não possuo
-      </label>
-    </div>
-  );
-}
-
-function TagInput({ label, placeholder, values, maxItems, disabled = false, onChange }: { label: string; placeholder: string; values: string[]; maxItems: number; disabled?: boolean; onChange: (values: string[]) => void }) {
-  const [draft, setDraft] = useState("");
-  const [message, setMessage] = useState("");
-
-  function addTag() {
-    const value = draft.trim();
-    if (!value) return;
-    if (values.length >= maxItems) {
-      setMessage(`Limite de ${maxItems} itens atingido.`);
-      return;
-    }
-    if (values.some((item) => item.localeCompare(value, "pt-BR", { sensitivity: "accent" }) === 0)) {
-      setMessage("Este item já foi adicionado.");
-      return;
-    }
-    onChange([...values, value]);
-    setDraft("");
-    setMessage("");
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    addTag();
-  }
-
-  return (
-    <div className={`tag-field${disabled ? " is-disabled" : ""}`}>
-      <div className="tag-field-heading"><label>{label}</label><small>{values.length}/{maxItems}</small></div>
-      <div className="tag-entry">
-        <input maxLength={80} disabled={disabled || values.length >= maxItems} value={draft} onChange={(event) => { setDraft(event.target.value); setMessage(""); }} onKeyDown={handleKeyDown} placeholder={disabled ? "Marcado como não possuo" : values.length >= maxItems ? `Limite de ${maxItems} itens atingido` : placeholder} />
-        <button type="button" disabled={disabled || values.length >= maxItems || !draft.trim()} onClick={addTag}>Adicionar</button>
-      </div>
-      {message ? <p className="tag-message" role="status">{message}</p> : null}
-      {values.length ? (
-        <ul className="tag-list" aria-label={`${label} adicionados`}>
-          {values.map((value) => (
-            <li key={value}>{value}<button type="button" onClick={() => { onChange(values.filter((item) => item !== value)); setMessage(""); }} aria-label={`Remover ${value}`}>×</button></li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
+function validateOptionalNumber(value: string, minimum: number, maximum: number, step: number, message: string) {
+  if (!value.trim()) return undefined;
+  const number = Number(value);
+  const steps = (number - minimum) / step;
+  return Number.isFinite(number) && number >= minimum && number <= maximum && Math.abs(steps - Math.round(steps)) < 1e-8 ? undefined : message;
 }

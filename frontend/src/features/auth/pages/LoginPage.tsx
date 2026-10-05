@@ -1,37 +1,26 @@
+import { AuthLayout } from "../layouts/AuthLayout";
 import { Navigate } from "react-router-dom";
 
 import { LoginForm } from "../LoginForm";
 import { useAuth } from "../useAuth";
 
 export function LoginPage() {
-  const { isAuthenticated } = useAuth();
-  if (isAuthenticated) return <Navigate to="/app/paciente" replace />;
+  const { currentUser, isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <main className="route-loading">Carregando...</main>;
+  if (isAuthenticated && currentUser) {
+    const destination = currentUser.role === "admin" ? "/app/admin" : currentUser.role === "patient" ? "/app/paciente" : "/app/nutricionista";
+    return <Navigate to={destination} replace />;
+  }
 
   return (
-    <main className="login-page">
-      <section className="login-card" aria-labelledby="login-title">
-        <div className="login-card__content">
-          <div className="brand" aria-label="Nutri Mais">
-            <span>Nutri</span>
-            <span className="brand__symbol">+</span>
-          </div>
-
-          <div className="login-card__heading">
-            <span className="eyebrow">Sua saúde em movimento</span>
-            <h1 id="login-title">Bem-vindo de volta</h1>
-          </div>
-
-          <LoginForm />
-        </div>
-
-        <div className="login-card__visual" aria-hidden="true">
-          <img src="/assets/runner-health.webp" alt="" />
-          <div className="visual-copy">
-            <span className="visual-copy__badge">Cuidado que acompanha</span>
-            <p>Pequenos passos constroem uma vida mais saudável.</p>
-          </div>
-        </div>
-      </section>
-    </main>
+    <AuthLayout
+      titleId="login-title"
+      eyebrow="Sua saúde em movimento"
+      title="Bem-vindo de volta"
+      badge="Cuidado que acompanha"
+      visualText="Pequenos passos constroem uma vida mais saudável."
+    >
+      <LoginForm />
+    </AuthLayout>
   );
 }

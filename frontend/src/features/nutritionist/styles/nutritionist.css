@@ -1,0 +1,909 @@
+.nutri-app {
+  min-height: 100dvh;
+  background: #f6f3fa;
+  color: #352744;
+  font-size: 14px;
+}
+.nutri-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 236px;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 20px;
+  background: #fff;
+  border-right: 1px solid #ece5f3;
+  z-index: 30;
+}
+.nutri-brand {
+  font-size: 27px;
+  font-weight: 850;
+  padding: 0 12px 35px;
+}
+.nutri-brand > span {
+  color: #7542ce;
+}
+.nutri-brand small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8e7ea0;
+  margin-top: 7px;
+}
+.nutri-sidebar nav {
+  display: grid;
+  gap: 8px;
+}
+.nutri-sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 13px;
+  color: #81738f;
+  font-size: 13px;
+}
+.nutri-sidebar nav a.active {
+  background: #7542ce;
+  color: white;
+}
+.nutri-sidebar svg {
+  width: 21px;
+  height: 21px;
+  flex: none;
+}
+.nutri-sidebar nav a:hover {
+  text-decoration: none;
+  background: #eee8f6;
+  color: #683ab6;
+}
+.nutri-account {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 4px 16px;
+}
+.nutri-account > b,
+.nutri-person > b {
+  display: grid;
+  place-items: center;
+  background: #eee6fa;
+  color: #7542ce;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+.nutri-account span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.nutri-account small {
+  display: block;
+  color: #93869f;
+  margin-top: 4px;
+}
+.nutri-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: #80718e;
+  padding: 10px;
+  cursor: pointer;
+}
+.nutri-main {
+  margin-left: 236px;
+  padding: 24px 40px 50px;
+  max-width: 1700px;
+}
+.nutri-demo-label {
+  color: #8b7c99;
+  font-size: 11px;
+  margin-bottom: 26px;
+}
+.nutri-heading {
+  margin: 12px 0 30px;
+}
+.nutri-heading > span {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  font-weight: 800;
+  color: #7542ce;
+}
+.nutri-heading h1 {
+  margin: 8px 0;
+  font-size: 32px;
+  letter-spacing: -1px;
+}
+.nutri-heading p {
+  color: #897a98;
+  line-height: 1.6;
+  margin: 0;
+}
+.nutri-heading .nutri-actions {
+  margin-top: 20px;
+}
+.nutri-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.nutri-metrics article {
+  background: white;
+  border: 1px solid #ece5f3;
+  border-radius: 18px;
+  padding: 22px;
+}
+.nutri-metrics small {
+  color: #91829f;
+}
+.nutri-metrics strong {
+  display: block;
+  font-size: 34px;
+  margin-top: 12px;
+  color: #6840ad;
+}
+.nutri-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.nutri-card {
+  background: #fff;
+  border: 1px solid #ece5f3;
+  border-radius: 20px;
+  padding: 26px;
+  margin-bottom: 22px;
+  min-width: 0;
+}
+.nutri-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.nutri-card h2 {
+  font-size: 18px;
+  margin: 0 0 16px;
+}
+.nutri-card h3 {
+  font-size: 15px;
+}
+.nutri-card p {
+  line-height: 1.6;
+}
+.nutri-muted {
+  color: #94879f;
+  font-size: 12px;
+}
+.nutri-empty {
+  padding: 30px 16px;
+  color: #91839e;
+  text-align: center;
+  line-height: 1.6;
+}
+.nutri-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px solid #f0eaf5;
+  padding: 18px 0;
+}
+.nutri-list-row span {
+  font-size: 12px;
+  color: #8c7b9b;
+}
+.nutri-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.nutri-toolbar > label {
+  flex: 1;
+  min-width: 160px;
+}
+.nutri-app .nutri-appointment-filters > label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.nutri-appointment-filters .nutri-filter-label {
+  display: block;
+  margin: 0;
+  color: #70607f;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+  text-align: left;
+}
+.nutri-app .nutri-appointment-filters input,
+.nutri-app .nutri-appointment-filters select,
+.nutri-app select.nutri-rounded-select {
+  height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 400;
+}
+.nutri-app .nutri-appointment-filters select,
+.nutri-app select.nutri-rounded-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2370607f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.nutri-app label,
+.nutri-modal label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #70607f;
+}
+.nutri-app input,
+.nutri-app select,
+.nutri-app textarea,
+.nutri-modal input,
+.nutri-modal select,
+.nutri-modal textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e2d9eb;
+  border-radius: 10px;
+  background: white;
+  color: #3e304b;
+  font: inherit;
+}
+.nutri-app textarea,
+.nutri-modal textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+.nutri-app input:focus,
+.nutri-app select:focus,
+.nutri-app textarea:focus,
+.nutri-modal input:focus,
+.nutri-modal textarea:focus,
+.nutri-modal select:focus {
+  outline: 2px solid #b89ae6;
+  outline-offset: 1px;
+}
+.nutri-primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background: #7542ce !important;
+  color: #fff !important;
+  border: 1px solid #7542ce !important;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nutri-app button,
+.nutri-modal button {
+  font: inherit;
+  cursor: pointer;
+}
+.nutri-app button:disabled,
+.nutri-modal button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.nutri-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.nutri-actions > button,
+.nutri-form > button:not(.nutri-primary),
+.nutri-foods > button,
+.nutri-substitution > button {
+  padding: 10px 13px;
+  border: 1px solid #e1d7eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #72558b;
+  font-size: 12px;
+}
+.nutri-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+.nutri-table-card table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+}
+.nutri-table-card th {
+  padding: 18px;
+  color: #95859f;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid #eee7f4;
+}
+.nutri-table-card td {
+  padding: 17px 18px;
+  border-bottom: 1px solid #f2ecf7;
+  overflow-wrap: anywhere;
+}
+.nutri-table-card td small,
+.nutri-person small {
+  display: block;
+  color: #998ba5;
+  font-size: 11px;
+  margin-top: 5px;
+}
+.nutri-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nutri-badge {
+  display: inline-block;
+  color: #8960b0;
+  background: #f3ebfb;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.nutri-badge.green {
+  background: #e5f5ee;
+  color: #37816b;
+}
+.nutri-app .pagination,
+.nutri-modal .pagination,
+.patient-app .pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-top: 1px solid #eee7f4;
+  color: #95859f;
+  font-size: 11px;
+}
+.nutri-app .pagination div,
+.nutri-modal .pagination div,
+.patient-app .pagination div {
+  display: flex;
+  gap: 8px;
+}
+.nutri-app .pagination button,
+.nutri-modal .pagination button,
+.patient-app .pagination button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e6dcef;
+  background: #fff;
+  border-radius: 8px;
+  color: #7542ce;
+}
+.nutri-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e5dced;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.nutri-tabs button {
+  white-space: nowrap;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  padding: 14px;
+  color: #9785a7;
+}
+.nutri-tabs button.active {
+  color: #7542ce;
+  border-bottom-color: #7542ce;
+  font-weight: 750;
+}
+.nutri-form {
+  display: grid;
+  gap: 18px;
+}
+.nutri-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.nutri-form > .nutri-primary {
+  justify-self: start;
+}
+.nutri-details dt {
+  color: #94869f;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.nutri-details dd {
+  margin: 0 0 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.nutri-record {
+  padding: 18px 0;
+  border-top: 1px solid #eee7f4;
+  margin-top: 20px;
+}
+.nutri-record small {
+  color: #9a8aa7;
+}
+.nutri-record p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.nutri-intake-group {
+  border-top: 1px solid #ece5f3;
+  padding-top: 12px;
+}
+.nutri-intake-group .nutri-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.nutri-plan-summary {
+  padding: 24px 0;
+  border-top: 1px solid #ece5f3;
+}
+.nutri-plan-summary .nutri-actions {
+  margin-top: 15px;
+}
+.nutri-plan-summary details {
+  font-size: 12px;
+  color: #887396;
+  line-height: 1.7;
+}
+.nutri-error {
+  color: #b54646;
+  background: #fff1f1;
+  border-radius: 8px;
+  padding: 12px;
+}
+.nutri-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #30204377;
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.nutri-modal {
+  width: min(780px, 100%);
+  max-height: 90dvh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 22px;
+  padding: 26px;
+  color: #3d2a4b;
+}
+.nutri-modal > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.nutri-modal h2 {
+  font-size: 22px;
+  margin: 0;
+}
+.nutri-modal > header > button {
+  border: 0;
+  background: #f4edf9;
+  color: #7b6690;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 24px;
+}
+.nutri-modal > p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #867191;
+}
+.nutri-picker {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+.nutri-picker > button {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 14px;
+  border: 1px solid #e4d9ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #483454;
+}
+.nutri-picker > button[aria-pressed="true"] {
+  border-color: #7542ce;
+  background: #f5effc;
+}
+.nutri-picker small,
+.nutri-picker span {
+  font-size: 11px;
+  color: #9881a8;
+}
+.nutri-meal-editor {
+  min-width: 0;
+  border: 1px solid #e5d9ef;
+  border-radius: 12px;
+  padding: 18px;
+}
+.nutri-meal-editor legend {
+  font-weight: 750;
+  color: #7542ce;
+  padding: 0 8px;
+}
+.nutri-foods {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+.nutri-food-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 32px;
+  align-items: end;
+  gap: 10px;
+}
+.nutri-food-row > button {
+  border: 0;
+  background: #f7edf3;
+  border-radius: 7px;
+  height: 40px;
+  color: #ad5572;
+}
+.nutri-macro-inputs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.nutri-substitution {
+  background: #faf7fd;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 16px 0;
+}
+.nutri-substitution h3 {
+  font-size: 13px;
+}
+.nutri-evolution-svg {
+  width: 100%;
+  height: 200px;
+}
+.nutri-chart-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 15px;
+}
+.nutri-chart-values span {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.nutri-chart-values small {
+  color: #a18daf;
+  font-size: 10px;
+}
+.nutri-chat {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  background: white;
+  border: 1px solid #e9e0f1;
+  border-radius: 18px;
+  overflow: hidden;
+  min-height: 550px;
+}
+.nutri-chat > aside {
+  padding: 18px;
+  border-right: 1px solid #eee6f5;
+}
+.nutri-chat > aside > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  color: #655270;
+  margin-top: 8px;
+}
+.nutri-chat > aside > button.active {
+  background: #f1e9fb;
+}
+.nutri-chat > aside > button > b {
+  color: #7542ce;
+}
+.nutri-chat > aside > button > span {
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+}
+.nutri-chat > aside small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 6px;
+  color: #a28eae;
+}
+.nutri-chat > aside em {
+  background: #7542ce;
+  color: white;
+  border-radius: 10px;
+  padding: 3px 6px;
+  font-size: 10px;
+}
+.nutri-chat > section {
+  min-width: 0;
+}
+.shared-conversation {
+  display: grid;
+  grid-template-rows: auto minmax(180px, 1fr) auto;
+  height: 600px;
+  max-height: 75dvh;
+  min-width: 0;
+  overflow: hidden;
+}
+.shared-conversation .chat-history {
+  overflow: auto;
+}
+.nutri-chat-back {
+  display: none;
+}
+.patient-preview-notice {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: #eee5fb;
+  color: #7142cd;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 11px;
+  margin-bottom: 14px;
+}
+.patient-content.has-fixed-view:has(.patient-preview-notice) {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+}
+@media (max-width: 1100px) {
+  .nutri-main {
+    padding: 24px;
+  }
+  .nutri-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .nutri-columns {
+    grid-template-columns: 1fr;
+  }
+  .nutri-sidebar {
+    width: 190px;
+    padding: 25px 12px;
+  }
+  .nutri-main {
+    margin-left: 190px;
+  }
+  .nutri-chat {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .nutri-table-card th,
+  .nutri-table-card td {
+    padding: 14px 10px;
+  }
+}
+@media (max-width: 700px) {
+  .nutri-sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    width: auto;
+    height: 70px;
+    padding: 5px;
+    background: #fff;
+    border-top: 1px solid #e8dff1;
+    flex-direction: row;
+    align-items: center;
+  }
+  .nutri-brand,
+  .nutri-account {
+    display: none;
+  }
+  .nutri-sidebar nav {
+    display: flex;
+    flex: 1;
+    justify-content: space-around;
+    gap: 0;
+  }
+  .nutri-sidebar nav a {
+    flex-direction: column;
+    gap: 4px;
+    padding: 7px 5px;
+    border-radius: 9px;
+    font-size: 11px;
+  }
+  .nutri-sidebar nav a svg {
+    width: 18px;
+    height: 18px;
+  }
+  .nutri-logout {
+    font-size: 0;
+    padding: 9px;
+  }
+  .nutri-main {
+    margin-left: 0;
+    padding: 20px 16px 90px;
+  }
+  .nutri-heading h1 {
+    font-size: 28px;
+  }
+  .nutri-heading {
+    margin-bottom: 24px;
+  }
+  .nutri-demo-label {
+    font-size: 10px;
+    margin-bottom: 20px;
+  }
+  .nutri-metrics {
+    gap: 10px;
+  }
+  .nutri-metrics article {
+    padding: 18px;
+  }
+  .nutri-metrics strong {
+    font-size: 28px;
+  }
+  .nutri-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  .nutri-table-card {
+    padding: 0;
+  }
+  .nutri-table-card table,
+  .nutri-table-card tbody,
+  .nutri-table-card tr,
+  .nutri-table-card td {
+    display: block;
+  }
+  .nutri-table-card thead {
+    display: none;
+  }
+  .nutri-table-card tr {
+    padding: 14px;
+    border-bottom: 1px solid #eee7f4;
+  }
+  .nutri-table-card td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border: 0;
+  }
+  .nutri-table-card td[data-label]:before {
+    content: attr(data-label);
+    font-size: 12px;
+    color: #665874;
+  }
+  .nutri-table-card td:first-child:before {
+    display: none;
+  }
+  .nutri-table-card td small {
+    font-size: 10px;
+  }
+  .nutri-toolbar {
+    gap: 12px;
+  }
+  .nutri-toolbar > label {
+    min-width: 130px;
+  }
+  .nutri-toolbar > .nutri-primary {
+    width: 100%;
+  }
+  .nutri-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .nutri-intake-group .nutri-details {
+    grid-template-columns: 1fr;
+  }
+  .nutri-tabs {
+    gap: 0;
+  }
+  .nutri-tabs button {
+    font-size: 12px;
+    padding: 13px 10px;
+  }
+  .nutri-modal-backdrop {
+    padding: 0;
+    align-items: end;
+  }
+  .nutri-modal {
+    max-height: 93dvh;
+    border-radius: 20px 20px 0 0;
+    padding: 20px;
+  }
+  .nutri-food-row {
+    grid-template-columns: minmax(0, 1fr) 85px 28px;
+    gap: 6px;
+  }
+  .nutri-meal-editor {
+    padding: 12px;
+  }
+  .nutri-macro-inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+  .nutri-chat {
+    display: block;
+    min-height: 450px;
+  }
+  .nutri-chat > aside {
+    border: 0;
+  }
+  .nutri-chat.is-open > aside {
+    display: none;
+  }
+  .nutri-chat:not(.is-open) > section {
+    display: none;
+  }
+  .nutri-chat-back {
+    display: block;
+    padding: 12px;
+    background: white;
+    color: #7542ce;
+    border: 0;
+  }
+  .shared-conversation {
+    height: 65dvh;
+    max-height: none;
+  }
+  .patient-preview-notice {
+    flex-direction: column;
+  }
+  .nutri-card > header {
+    flex-wrap: wrap;
+  }
+  .nutri-list-row {
+    flex-wrap: wrap;
+  }
+}
+.nutri-heading p,
+.nutri-metrics small,
+.nutri-empty,
+.nutri-muted {
+  color: #665874;
+}
+@media (max-width: 700px) {
+  .nutri-sidebar nav a:not(.active) {
+    color: #665874;
+  }
+}

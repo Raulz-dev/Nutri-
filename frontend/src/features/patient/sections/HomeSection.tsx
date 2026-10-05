@@ -1,109 +1,88 @@
-import { useState } from "react";
+import { useModalBehavior } from "../../../hooks/useModalBehavior";
+import { useRef, useState } from "react";
 
 import { PatientIcon, type IconName } from "../components/PatientIcon";
-import { patientMock, type PatientSection } from "../mocks/patient-data";
+import type { PatientSection } from "../mocks/patient-data";
+import { initials } from "../../demo/store";
+import { EvolutionChart } from "../../demo/EvolutionChart";
+import { usePatientData } from "../../demo/PatientContext";
 
 export function HomeSection({ onNavigate }: { onNavigate: (section: PatientSection) => void }) {
-  const [chartMetric, setChartMetric] = useState<"weight" | "bodyFat">("weight");
-  const nextMeal = getNextMeal();
-  const chartValues = patientMock.measurements.map((measurement) => measurement[chartMetric]);
-  const chartMax = Math.max(...chartValues);
-  const chartMin = Math.min(...chartValues);
-  const chartPoints = chartValues.map((value, index) => ({
-    x: 18 + index * 101,
-    y: 138 - ((value - chartMin) / Math.max(chartMax - chartMin, 1)) * 92,
-  }));
-  const linePoints = chartPoints.map(({ x, y }) => `${x},${y}`).join(" ");
-  const areaPoints = `18,150 ${linePoints} 321,150`;
+  const { view: patientData, history } = usePatientData();
+  const [showAppointment, setShowAppointment] = useState(false);
+  const appointmentDialog = useRef<HTMLElement>(null);
+  const nextMeal = getNextMeal(patientData.meals);
+  useModalBehavior(appointmentDialog, () => setShowAppointment(false), showAppointment);
 
   return (
     <div className="home-dashboard">
       <section className="health-summary-grid" aria-label="Resumo de saúde">
-        <Summary icon="chart" label="Peso atual" value={patientMock.currentWeight} detail={`${patientMock.weightChange} desde o início`} />
-        <Summary icon="percent" label="Percentual de gordura" value={patientMock.bodyFat} detail={patientMock.bodyFatChange} />
-        <Summary icon="clock" label="Próxima refeição" value={nextMeal.title} detail={`${nextMeal.time}${nextMeal.isTomorrow ? " · amanhã" : ""}`} />
-        <Summary icon="water" label="Água diária" value={patientMock.mealPlan.dailyWaterGoal} detail="Meta diária do plano" />
-        <Summary icon="target" label="Calorias diárias" value={patientMock.dailyCalories} detail="Total estimado do plano" />
+        <Summary icon="chart" label="Peso atual" value={patientData.currentWeight} detail={patientData.weightChange} />
+        <Summary icon="percent" label="Percentual de gordura" value={patientData.bodyFat} detail={patientData.bodyFatChange} />
+        <Summary icon="clock" label="Próxima refeição" value={nextMeal?.title ?? "Sem plano"} detail={nextMeal ? `${nextMeal.time}${nextMeal.isTomorrow ? " · amanhã" : ""}` : "Nenhuma refeição publicada"} />
+        <Summary icon="water" label="Água diária" value={patientData.mealPlan.dailyWaterGoal} detail="Meta diária do plano" />
+        <Summary icon="target" label="Calorias diárias" value={patientData.dailyCalories} detail="Total estimado do plano" />
       </section>
 
       <section className="dashboard-insights">
-        <article className="evolution-chart-card">
-          <header className="evolution-chart-header">
-            <div>
-              <span className="card-label">Sua evolução</span>
-              <h2>{chartMetric === "weight" ? "Peso" : "Gordura corporal"}</h2>
-              <p>Últimas quatro medições</p>
-            </div>
-            <div className="chart-toggle" aria-label="Métrica do gráfico">
-              <button className={chartMetric === "weight" ? "is-active" : ""} type="button" onClick={() => setChartMetric("weight")} aria-pressed={chartMetric === "weight"}>
-                Peso
-              </button>
-              <button className={chartMetric === "bodyFat" ? "is-active" : ""} type="button" onClick={() => setChartMetric("bodyFat")} aria-pressed={chartMetric === "bodyFat"}>
-                Gordura
-              </button>
-            </div>
-          </header>
-          <div className="line-chart" role="img" aria-label={`Gráfico de linha da evolução de ${chartMetric === "weight" ? "peso" : "gordura corporal"}`}>
-            <svg viewBox="0 0 340 170" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="chart-area-gradient" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#7542ce" stopOpacity=".28" />
-                  <stop offset="100%" stopColor="#7542ce" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <line className="chart-grid-line" x1="0" x2="340" y1="46" y2="46" />
-              <line className="chart-grid-line" x1="0" x2="340" y1="92" y2="92" />
-              <line className="chart-grid-line" x1="0" x2="340" y1="138" y2="138" />
-              <polygon className="chart-area" points={areaPoints} />
-              <polyline className="chart-line" points={linePoints} />
-              {chartPoints.map(({ x, y }, index) => (
-                <circle className="chart-point" cx={x} cy={y} r="5" key={patientMock.measurements[index].date} />
-              ))}
-            </svg>
-            <div className="chart-values">
-              {patientMock.measurements.map((measurement) => (
-                <span key={measurement.date}>
-                  <strong>
-                    {String(measurement[chartMetric]).replace(".", ",")}
-                    {chartMetric === "weight" ? " kg" : "%"}
-                  </strong>
-                  <small>{measurement.date}</small>
-                </span>
-              ))}
-            </div>
-          </div>
-          <button className="chart-details-button" type="button" onClick={() => onNavigate("progress")}>
-            Ver detalhes <PatientIcon name="arrow" />
-          </button>
-        </article>
+        <div>
+          <EvolutionChart measurements={history.slice(-4)} />
+          <button className="chart-details-button" type="button" onClick={() => onNavigate("progress")}>Ver detalhes <PatientIcon name="arrow" /></button>
+        </div>
 
-        <article className="next-appointment-card">
+        {patientData.appointment ? <article className="next-appointment-card">
           <div className="appointment-icon"><PatientIcon name="calendar" /></div>
           <span className="appointment-eyebrow">Próxima consulta</span>
-          <h2>28 de setembro</h2>
-          <strong>14h30</strong>
+          <h2>{patientData.appointment.date.replace(/ de \d{4}$/, "")}</h2>
+          <strong>{patientData.appointment.time}</strong>
           <div className="appointment-professional">
-            <span>MC</span>
+            <span>{initials(patientData.nutritionist)}</span>
             <div>
-              <strong>{patientMock.nutritionist}</strong>
-              <small>Consulta de acompanhamento</small>
+              <strong>{patientData.nutritionist}</strong>
+              <small>{patientData.appointment.type}</small>
             </div>
           </div>
-          <button type="button">Ver detalhes da consulta <PatientIcon name="arrow" /></button>
-        </article>
+          <button type="button" onClick={() => setShowAppointment(true)}>Ver detalhes da consulta <PatientIcon name="arrow" /></button>
+        </article> : <article className="next-appointment-card"><h2>Nenhuma consulta agendada</h2></article>}
       </section>
+
+      {showAppointment && patientData.appointment ? (
+        <div className="appointment-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setShowAppointment(false)}>
+          <section ref={appointmentDialog} className="appointment-modal" role="dialog" aria-modal="true" aria-labelledby="appointment-modal-title">
+            <header className="meal-modal-header">
+              <div>
+                <span className="card-label">Próxima consulta</span>
+                <h2 id="appointment-modal-title">{patientData.appointment.type}</h2>
+              </div>
+              <button className="meal-modal-close" type="button" onClick={() => setShowAppointment(false)} aria-label="Fechar detalhes da consulta">×</button>
+            </header>
+            <div className="appointment-modal-highlight">
+              <PatientIcon name="calendar" />
+              <div><strong>{patientData.appointment.date}</strong><span>às {patientData.appointment.time}</span></div>
+            </div>
+            <dl className="appointment-details">
+              <div><dt>Profissional</dt><dd>{patientData.nutritionist}</dd></div>
+              <div><dt>Formato</dt><dd>{patientData.appointment.format}</dd></div>
+              <div><dt>Local</dt><dd>{patientData.appointment.location}<small>{patientData.appointment.address}</small></dd></div>
+            </dl>
+            <p className="appointment-guidance">{patientData.appointment.guidance}</p>
+            <button className="appointment-modal-done" type="button" onClick={() => setShowAppointment(false)}>Entendi</button>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function getNextMeal() {
+function getNextMeal(meals: ReturnType<typeof usePatientData>["view"]["meals"]) {
+  if (!meals.length) return null;
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const meal = patientMock.meals.find(({ time }) => {
+  const meal = meals.find(({ time }) => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes >= currentMinutes;
   });
-  return meal ? { ...meal, isTomorrow: false } : { ...patientMock.meals[0], isTomorrow: true };
+  return meal ? { ...meal, isTomorrow: false } : { ...meals[0], isTomorrow: true };
 }
 
 function Summary({ icon, label, value, detail }: { icon: IconName; label: string; value: string; detail: string }) {

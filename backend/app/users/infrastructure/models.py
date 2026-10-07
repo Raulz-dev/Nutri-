@@ -11,6 +11,8 @@ from app.users.domain.enums import UserRole, UserStatus
 
 class UserModel(Base, IdMixin, TimestampMixin):
     __tablename__ = "users"
+    deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    credentials_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(320), nullable=False)

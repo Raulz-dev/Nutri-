@@ -9,6 +9,7 @@ from app.users.application.delete_user import DeleteUser
 from app.users.application.get_user import GetUser
 from app.users.application.list_users import ListUsers
 from app.users.application.update_user import UpdateUser
+from app.users.domain.enums import UserRole, UserStatus
 from app.users.domain.exceptions import (
     CannotDeleteCurrentUserError,
     InvalidCredentialsError,
@@ -49,6 +50,13 @@ def to_response(user: User) -> UserResponse:
         email=user.email,
         role=user.role,
         status=user.status,
+        deactivated_at=user.deactivated_at,
+        first_access_pending=(
+            user.role == UserRole.NUTRITIONIST
+            and user.status == UserStatus.BLOCKED
+            and user.credentials_changed_at is None
+            and user.deactivated_at is None
+        ),
     )
 
 

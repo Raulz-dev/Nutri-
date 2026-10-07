@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 from app.security.password import PasswordHasher
 from app.security.tokens import create_opaque_token, hash_token
+from app.users.domain.enums import UserStatus
 from app.users.domain.exceptions import (
     InvalidPasswordResetTokenError,
     PasswordMismatchError,
@@ -31,7 +32,7 @@ class RequestPasswordReset:
 
     async def execute(self, email: str) -> None:
         user = await self._user_repository.find_by_email(email.strip().lower())
-        if user is None:
+        if user is None or user.status != UserStatus.ACTIVE or user.deactivated_at:
             return
 
         token = create_opaque_token()
@@ -65,7 +66,7 @@ class ResetPassword:
             raise InvalidPasswordResetTokenError("Token inválido ou expirado.")
 
         user = await self._user_repository.find_by_id(user_id)
-        if user is None:
+        if user is None or user.status != UserStatus.ACTIVE or user.deactivated_at:
             raise InvalidPasswordResetTokenError("Token inválido ou expirado.")
 
         user.change_password_hash(self._password_hasher.hash(new_password))

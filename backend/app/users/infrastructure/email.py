@@ -5,11 +5,23 @@ from urllib.parse import urlencode
 
 
 class SMTPPasswordResetSender:
-    def __init__(self, host: str, port: int, from_email: str, reset_url: str) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        from_email: str,
+        reset_url: str,
+        username: str = "",
+        password: str = "",
+        starttls: bool = False,
+    ) -> None:
         self._host = host
         self._port = port
         self._from_email = from_email
         self._reset_url = reset_url
+        self._username = username
+        self._password = password
+        self._starttls = starttls
 
     async def __call__(self, recipient: str, token: str) -> None:
         query = urlencode({"token": token})
@@ -26,4 +38,8 @@ class SMTPPasswordResetSender:
 
     def _send(self, message: EmailMessage) -> None:
         with smtplib.SMTP(self._host, self._port, timeout=10) as smtp:
+            if self._starttls:
+                smtp.starttls()
+            if self._username:
+                smtp.login(self._username, self._password)
             smtp.send_message(message)

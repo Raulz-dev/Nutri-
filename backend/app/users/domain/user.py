@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from uuid import UUID, uuid7
 
 from email_validator import EmailNotValidError, validate_email
@@ -20,6 +21,8 @@ class User:
     password_hash: str
     role: UserRole
     status: UserStatus = UserStatus.ACTIVE
+    deactivated_at: datetime | None = None
+    credentials_changed_at: datetime | None = None
     id: UUID = field(default_factory=uuid7)
 
     def __post_init__(self) -> None:

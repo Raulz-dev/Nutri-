@@ -28,7 +28,7 @@ class LoginUser:
         user = await self._user_repository.find_by_email(email.strip().lower())
         if user is None or not self._password_hasher.verify(password, user.password_hash):
             raise InvalidCredentialsError("E-mail ou senha inválidos.")
-        if user.status == UserStatus.BLOCKED:
+        if user.status == UserStatus.BLOCKED or user.deactivated_at:
             raise UserBlockedError("Usuário bloqueado.")
 
         refresh_token = create_opaque_token()

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import Settings, get_settings
 from app.database.session import get_db
+from app.operations import actor_id
 from app.security.jwt import JWTService
 from app.security.password import PasswordHasher
 from app.users.application.change_password import ChangePassword
@@ -32,19 +33,19 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_user_repository(
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
 ) -> SQLAlchemyUserRepository:
     return SQLAlchemyUserRepository(db)
 
 
 def get_refresh_repository(
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
 ) -> SQLAlchemyRefreshSessionRepository:
     return SQLAlchemyRefreshSessionRepository(db)
 
 
 def get_reset_repository(
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
 ) -> SQLAlchemyPasswordResetRepository:
     return SQLAlchemyPasswordResetRepository(db)
 
@@ -86,8 +87,14 @@ async def get_current_user(
         raise unauthorized from error
 
     user = await repository.find_by_id(user_id)
-    if user is None or user.status != UserStatus.ACTIVE:
+    if user is None or user.status != UserStatus.ACTIVE or user.deactivated_at:
         raise unauthorized
+    if (
+        user.credentials_changed_at
+        and payload.get("iat", 0) < user.credentials_changed_at.timestamp()
+    ):
+        raise unauthorized
+    actor_id.set(user.id)
     return user
 
 
@@ -185,6 +192,9 @@ def get_request_password_reset(
         port=settings.smtp_port,
         from_email=settings.smtp_from_email,
         reset_url=settings.password_reset_url,
+        username=settings.smtp_username,
+        password=settings.smtp_password,
+        starttls=settings.smtp_starttls,
     )
     return RequestPasswordReset(
         user_repository,

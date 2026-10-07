@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
@@ -11,6 +12,8 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: UserRole
     status: UserStatus
+    deactivated_at: datetime | None = None
+    first_access_pending: bool = False
 
 
 class UserListResponse(BaseModel):

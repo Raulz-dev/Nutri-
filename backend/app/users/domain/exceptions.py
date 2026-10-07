@@ -2,6 +2,10 @@ class UserError(Exception):
     pass
 
 
+class UserConflictError(UserError):
+    pass
+
+
 class InvalidUserNameError(UserError):
     pass
 

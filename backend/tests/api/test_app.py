@@ -10,6 +10,21 @@ def test_health() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "healthy", "environment": "test"}
+    assert response.headers["x-request-id"]
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_validation_error_does_not_echo_sensitive_body() -> None:
+    response = client.post(
+        "/api/v1/auth/login", json={"email": "invalid", "password": "secret-example"}
+    )
+    assert response.status_code == 422
+    assert "secret-example" not in response.text
+    assert response.json()["error"]["request_id"] == response.headers["x-request-id"]
+
+
+def test_metrics_requires_secret() -> None:
+    assert client.get("/metrics").status_code == 404
 
 
 def test_initial_routes_are_registered() -> None:

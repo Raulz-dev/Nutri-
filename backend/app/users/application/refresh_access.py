@@ -32,7 +32,7 @@ class RefreshAccess:
             raise InvalidRefreshTokenError("Refresh token inválido ou expirado.")
 
         user = await self._user_repository.find_by_id(user_id)
-        if user is None or user.status != UserStatus.ACTIVE:
+        if user is None or user.status != UserStatus.ACTIVE or user.deactivated_at:
             await self._refresh_repository.revoke(hash_token(new_token))
             raise InvalidRefreshTokenError("Refresh token inválido ou expirado.")
 

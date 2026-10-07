@@ -1,10 +1,3 @@
-"""create users and authentication tables
-
-Revision ID: 20260902_0001
-Revises:
-Create Date: 2026-09-02 21:30:00
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa

@@ -1,13 +1,14 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from cryptography.fernet import Fernet
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_name: str = "Nutri + API"
-    app_env: Literal["development", "test", "production"] = "development"
+    app_env: Literal["development", "test", "staging", "production"] = "development"
     debug: bool = False
     database_url: str
     sql_echo: bool = False
@@ -17,10 +18,19 @@ class Settings(BaseSettings):
     access_token_expiration_minutes: int = Field(default=15, gt=0)
     refresh_token_expiration_days: int = Field(default=7, gt=0)
     password_reset_expiration_minutes: int = Field(default=30, gt=0)
+    invitation_expiration_hours: int = Field(default=24, gt=0)
+    care_invitation_expiration_days: int = Field(default=7, gt=0)
+    invitation_url: str = "http://localhost:5173/primeiro-acesso"
+    outbox_encryption_key: str = ""
+    metrics_token: str = ""
+    auth_rate_limit: int = Field(default=30, gt=0)
 
     smtp_host: str = "localhost"
     smtp_port: int = Field(default=1025, gt=0, le=65535)
     smtp_from_email: str = "nao-responda@maissaude.local"
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = False
     password_reset_url: str = "http://localhost:5173/redefinir-senha"
     cors_origins: list[str] = [
         "http://localhost:5173",
@@ -32,6 +42,20 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def validate_operational_secrets(self):
+        if self.app_env in ("staging", "production"):
+            if not self.outbox_encryption_key or not self.metrics_token:
+                raise ValueError("Configure OUTBOX_ENCRYPTION_KEY e METRICS_TOKEN.")
+            if not self.smtp_starttls:
+                raise ValueError("SMTP_STARTTLS é obrigatório em homologação e produção.")
+        if self.outbox_encryption_key:
+            try:
+                Fernet(self.outbox_encryption_key.encode())
+            except ValueError as error:
+                raise ValueError("OUTBOX_ENCRYPTION_KEY inválida.") from error
+        return self
 
 
 @lru_cache

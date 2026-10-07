@@ -18,7 +18,7 @@ class JWTService:
             "sub": str(user_id),
             "type": "access",
             "jti": str(uuid7()),
-            "iat": now,
+            "iat": now.timestamp(),
             "exp": now + timedelta(minutes=self._expiration_minutes),
         }
         return jwt.encode(payload, self._secret_key, algorithm=self._algorithm)

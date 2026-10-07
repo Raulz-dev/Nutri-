@@ -20,7 +20,7 @@ export function Input({ label, error, id, className, ...props }: InputProps) {
         aria-describedby={error ? errorId : undefined}
       />
       {error && (
-        <span className="field__error" id={errorId} role="alert">
+        <span className="visually-hidden-error" id={errorId}>
           {error}
         </span>
       )}

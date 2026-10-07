@@ -4,6 +4,7 @@ import { useDemo, demoUsers, today } from "../../demo/store";
 import { saveAppointment } from "../../demo/actions";
 import type { Appointment } from "../../demo/types";
 import { Modal } from "./Modal";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 export function AppointmentForm({
   source,
   defaultPatient,
@@ -117,11 +118,7 @@ export function AppointmentForm({
             onChange={(e) => setForm({ ...form, guidance: e.target.value })}
           />
         </label>
-        {error && (
-          <p role="alert" className="nutri-error">
-            {error}
-          </p>
-        )}
+        <ErrorToast message={error} />
         <div className="nutri-actions">
           <button type="button" onClick={onClose}>
             Voltar

@@ -7,4 +7,6 @@ export type User = {
   email: string;
   role: UserRole;
   status: UserStatus;
+  deactivated_at?: string | null;
+  first_access_pending?: boolean;
 };

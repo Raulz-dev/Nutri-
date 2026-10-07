@@ -1,213 +1,98 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { TablePagination } from "../../../components/shared/TablePagination";
-import { usePagination } from "../../../hooks/usePagination";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
 import {
-  activePlan,
-  demoUsers,
-  initials,
-  transferPatient,
-  useDemo,
-} from "../../demo/store";
-import { recordAudit } from "../../admin/admin-audit";
-import { Modal } from "../components/Modal";
+  cancelLinkInvitation,
+  invitePatient,
+  listLinkInvitations,
+  listPatients,
+  type LinkInvitation,
+  type PatientRow,
+} from "../../care/api";
+
 export function NutritionistPatientsPage() {
-  const { currentUser } = useAuth();
-  const state = useDemo();
+  const { session } = useAuth();
+  const token = session?.accessToken ?? "";
+  const [rows, setRows] = useState<PatientRow[]>([]);
+  const [invitations, setInvitations] = useState<LinkInvitation[]>([]);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [adding, setAdding] = useState(false);
-  const patients = demoUsers(state).filter(
-    (p) =>
-      p.role === "patient" &&
-      state.links.some(
-        (l) => l.patientId === p.id && l.nutritionistId === currentUser!.id,
-      ) &&
-      `${p.name} ${p.email}`.toLowerCase().includes(search.toLowerCase()) &&
-      (filter === "all" ||
-        Boolean(activePlan(state, p.id)) === (filter === "active")),
-  );
-  const pagination = usePagination(patients, JSON.stringify([search, filter]));
-  return (
-    <>
-      <header className="nutri-heading">
-        <span>ACOMPANHAMENTO</span>
-        <h1>Meus pacientes</h1>
-        <p>Histórico, planos e evolução em um só lugar.</p>
-      </header>
-      <div className="nutri-toolbar">
-        <label>
-          Buscar paciente
-          <input
-            placeholder="Nome ou e-mail"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
-        <label>
-          Plano alimentar
-          <select className="nutri-rounded-select" value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="all">Todos</option>
-            <option value="active">Com plano ativo</option>
-            <option value="pending">Sem plano ativo</option>
-          </select>
-        </label>
-        <button className="nutri-primary" onClick={() => setAdding(true)}>
-          Adicionar paciente
-        </button>
-      </div>
-      <section className="nutri-card nutri-table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Paciente</th>
-              <th>Plano alimentar</th>
-              <th>Acompanhamento</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagination.items.map((p) => (
-              <tr key={p.id}>
-                <td data-label="Paciente">
-                  <div className="nutri-person">
-                    <b>{initials(p.name)}</b>
-                    <span>
-                      {p.name}
-                      <small>{p.email}</small>
-                    </span>
-                  </div>
-                </td>
-                <td data-label="Plano">
-                  <span
-                    className={`nutri-badge ${activePlan(state, p.id) ? "green" : ""}`}
-                  >
-                    {activePlan(state, p.id) ? "Ativo" : "Sem plano ativo"}
-                  </span>
-                </td>
-                <td>
-                  <Link to={p.id}>Abrir paciente →</Link>
-                </td>
-              </tr>
-            ))}
-            {!patients.length && (
-              <tr>
-                <td colSpan={3} className="nutri-empty">
-                  Nenhum paciente encontrado.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        <TablePagination {...pagination} />
-      </section>
-      {adding && <AddPatient onClose={() => setAdding(false)} />}
-    </>
-  );
-}
-function AddPatient({ onClose }: { onClose: () => void }) {
-  const { currentUser } = useAuth();
-  const state = useDemo();
-  const users = demoUsers(state);
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [page, setPage] = useState(1);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const candidates = users.filter(
-    (u) =>
-      u.role === "patient" &&
-      u.status === "active" &&
-      `${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase()) &&
-      !state.links.some(
-        (l) => l.patientId === u.id && l.nutritionistId === currentUser!.id,
-      ),
-  );
-  const pagination = usePagination(candidates, search);
-  function add() {
-    if (!selected) return;
+  const [notice, setNotice] = useState("");
+  const refresh = useCallback(async () => {
+    const [patients, pending] = await Promise.all([
+      listPatients(token, (page - 1) * 10, search),
+      listLinkInvitations(token),
+    ]);
+    setRows(patients.items);
+    setTotal(patients.total);
+    setInvitations(pending);
+  }, [token, page, search]);
+
+  useEffect(() => {
+    refresh().catch((reason) => setError(reason instanceof Error ? reason.message : "Falha ao carregar pacientes."));
+  }, [refresh]);
+
+  async function sendInvitation(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
     try {
-      transferPatient(selected, currentUser!.id);
-      recordAudit(
-        "link",
-        users.find((u) => u.id === selected)!.name,
-        `Vinculado a ${currentUser!.name}`,
-      );
-      onClose();
-    } catch (e) {
-      setError((e as Error).message);
+      await invitePatient(token, email);
+      setEmail("");
+      setNotice("Convite disponível para aceite na conta do paciente.");
+      await refresh();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível criar o convite.");
+    } finally {
+      setBusy(false);
     }
   }
-  return (
-    <Modal title="Adicionar paciente" onClose={onClose}>
-      <p>
-        Selecione um cadastro existente. Planos ativos impedem a troca de
-        responsável.
-      </p>
-      <label>
-        Buscar cadastro
-        <input
-          placeholder="Nome ou e-mail do paciente"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setSelected(null);
-          }}
-        />
-      </label>
-      <div className="nutri-picker">
-        {pagination.items.map((p) => {
-          const owner = state.links.find(
-            (l) => l.patientId === p.id,
-          )?.nutritionistId;
-          const blocked = Boolean(activePlan(state, p.id));
-          return (
-            <button
-              type="button"
-              key={p.id}
-              disabled={blocked}
-              aria-pressed={selected === p.id}
-              onClick={() => {
-                setSelected(p.id);
-                setError("");
-              }}
-            >
-              <strong>{p.name}</strong>
-              <small>
-                {owner
-                  ? `Responsável: ${users.find((u) => u.id === owner)?.name ?? "Profissional anterior"}`
-                  : "Sem responsável"}
-              </small>
-              <span>
-                {blocked
-                  ? "Plano ativo · indisponível"
-                  : owner
-                    ? "Disponível para transferência"
-                    : "Disponível"}
-              </span>
-            </button>
-          );
-        })}
-        {!candidates.length && (
-          <p>Nenhum paciente disponível para esta busca.</p>
-        )}
-      </div>
-      <TablePagination {...pagination} />
-      {selected && (
-        <p>
-          Ao confirmar, este paciente ficará sob sua responsabilidade. O
-          histórico de acompanhamento será mantido.
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="nutri-error">
-          {error}
-        </p>
-      )}
-      <div className="nutri-actions">
-        <button onClick={onClose}>Cancelar</button>
-        <button disabled={!selected} className="nutri-primary" onClick={add}>
-          Confirmar vínculo
-        </button>
-      </div>
-    </Modal>
-  );
+
+  async function cancelInvitation(id: string) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await cancelLinkInvitation(token, id);
+      setNotice("Convite cancelado.");
+      await refresh();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível cancelar o convite.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <>
+    <header className="nutri-heading"><span>ACOMPANHAMENTO</span><h1>Meus pacientes</h1><p>Pacientes atualmente vinculados à sua conta.</p></header>
+    <ErrorToast message={error} />
+    {notice && <p role="status" className="nutri-notice">{notice}</p>}
+    <section className="nutri-card nutri-invitations">
+      <h2>Convidar paciente</h2>
+      <p>Convide um paciente já cadastrado e sem vínculo ativo. O vínculo será criado quando ele aceitar.</p>
+      <form onSubmit={sendInvitation} className="nutri-invite-form">
+        <label>E-mail do paciente<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+        <button type="submit" className="nutri-primary" disabled={busy}>Enviar convite</button>
+      </form>
+      {invitations.length > 0 && <div className="nutri-pending-invitations">
+        <h3>Aguardando aceite</h3>
+        <ul>{invitations.map((invitation) => <li key={invitation.id}>
+          <span>{invitation.patient_name}</span>
+          <button type="button" disabled={busy} onClick={() => cancelInvitation(invitation.id)}>Cancelar convite</button>
+        </li>)}</ul>
+      </div>}
+    </section>
+    <div className="nutri-toolbar"><label>Buscar paciente<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Nome" /></label></div>
+    <section className="nutri-card nutri-table-card"><table><thead><tr><th>Paciente</th><th>Status</th><th>Acompanhamento</th></tr></thead><tbody>
+      {rows.map((patient) => <tr key={patient.id}><td data-label="Paciente"><div className="nutri-person"><b>{patient.name.slice(0, 1)}</b><span>{patient.name}<small>{patient.email}</small></span></div></td><td data-label="Status">{patient.status === "active" ? "Ativo" : "Bloqueado"}</td><td><Link to={`/app/nutricionista/pacientes/${patient.id}/previa`}>Ver dados autorizados →</Link></td></tr>)}
+      {!rows.length && <tr><td colSpan={3} className="nutri-empty">Nenhum paciente vinculado.</td></tr>}
+    </tbody></table><TablePagination page={page} totalPages={Math.max(1, Math.ceil(total / 10))} onPageChange={setPage} /></section>
+  </>;
 }

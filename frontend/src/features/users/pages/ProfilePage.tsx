@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../auth/useAuth";
 import { getCurrentUser } from "../api";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import type { User } from "../types";
 
 export function ProfilePage() {
@@ -28,7 +29,7 @@ export function ProfilePage() {
           <span>Nutri</span>
           <span className="brand__symbol">+</span>
         </div>
-        {error ? <p role="alert">{error}</p> : null}
+        <ErrorToast message={error} />
         {!error && !user ? <p>Carregando perfil...</p> : null}
         {user ? (
           <>

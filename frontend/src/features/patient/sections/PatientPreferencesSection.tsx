@@ -4,16 +4,18 @@ import { type PatientIntake, emptyPatientIntake } from "../patient-intake";
 import { usePatientData } from "../../demo/PatientContext";
 import { savePatientPreferences } from "../../demo/actions";
 import { useAuth } from "../../auth/useAuth";
+import { useErrorToast } from "../../../components/ui/ErrorToast";
 
 import { Field, IntakeCard, RestrictionTags, TagInput } from "../components/preferences/IntakeFields";
 
 type IntakeGroup = "goal" | "food" | "restrictions" | "health" | "routine" | "lifestyle";
-type SaveStatus = "idle" | "success" | "error";
+type SaveStatus = "idle" | "success";
 type NumericErrors = Partial<Record<"mealsPerDay" | "waterLiters" | "sleepHours", string>>;
 
 export function PatientPreferencesSection() {
   const { state, patientId } = usePatientData();
   const { currentUser } = useAuth();
+  const showError = useErrorToast();
   const [intake, setIntake] = useState(() => structuredClone(state.intakes[patientId] ?? emptyPatientIntake));
   const savedIntake = JSON.stringify(state.intakes[patientId] ?? emptyPatientIntake);
   useEffect(() => { setIntake(JSON.parse(savedIntake) as PatientIntake); }, [savedIntake]);
@@ -44,6 +46,7 @@ export function PatientPreferencesSection() {
     setNumericErrors(nextNumericErrors);
     if (hasGoalError || hasNumericError) {
       setSaveStatus("idle");
+      showError([hasGoalError ? "Selecione um objetivo para continuar." : "", ...Object.values(nextNumericErrors)].filter(Boolean).join(" "));
       if (hasGoalError) goalRef.current?.focus();
       else (nextNumericErrors.mealsPerDay ? mealsRef : nextNumericErrors.waterLiters ? waterRef : sleepRef).current?.focus();
       return;
@@ -54,7 +57,7 @@ export function PatientPreferencesSection() {
       savePatientPreferences(patientId, intake, currentUser!);
       setSaveStatus("success");
     } catch {
-      setSaveStatus("error");
+      showError("Não foi possível salvar. Tente novamente.");
     }
   }
 
@@ -239,7 +242,6 @@ export function PatientPreferencesSection() {
       <footer className="intake-actions">
         <div aria-live="polite">
           {saveStatus === "success" ? <p className="intake-feedback is-success">Informações salvas neste dispositivo.</p> : null}
-          {saveStatus === "error" ? <p className="intake-feedback is-error">Não foi possível salvar. Tente novamente.</p> : null}
         </div>
         <button type="submit">Salvar informações</button>
       </footer>

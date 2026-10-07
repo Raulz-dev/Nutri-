@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 
 import { useModalBehavior } from "../../../../hooks/useModalBehavior";
+import { useErrorToast } from "../../../../components/ui/ErrorToast";
 import type { User, UserRole, UserStatus } from "../../../users/types";
 import type { AdminUserInput } from "../../admin-users";
 
@@ -18,6 +19,7 @@ export function UserModal({
   const [form, setForm] = useState<AdminUserInput>({ name: user?.name ?? "", email: user?.email ?? "", role: user?.role ?? "patient", status: user?.status ?? "active" });
   const [errors, setErrors] = useState<Partial<Record<keyof AdminUserInput, string>>>({});
   const dialogRef = useRef<HTMLElement>(null);
+  const showError = useErrorToast();
 
   useModalBehavior(dialogRef, onClose);
 
@@ -29,6 +31,7 @@ export function UserModal({
     else if (existingUsers.some((item) => item.id !== user?.id && item.email.toLowerCase() === form.email.trim().toLowerCase()))
       nextErrors.email = "Este e-mail já está em uso.";
     setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) showError(Object.values(nextErrors).filter(Boolean).join(" "));
     if (Object.keys(nextErrors).length) return;
     onSave(form);
   }
@@ -58,7 +61,6 @@ export function UserModal({
                 setErrors({ ...errors, name: undefined });
               }}
             />
-            {errors.name ? <small role="alert">{errors.name}</small> : null}
           </label>
           <label>
             <span>E-mail</span>
@@ -71,7 +73,6 @@ export function UserModal({
                 setErrors({ ...errors, email: undefined });
               }}
             />
-            {errors.email ? <small role="alert">{errors.email}</small> : null}
           </label>
           <div className="admin-form-grid">
             <label>
@@ -103,4 +104,3 @@ export function UserModal({
     </div>
   );
 }
-

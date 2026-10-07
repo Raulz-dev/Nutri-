@@ -63,7 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             registerActor(user);
           } catch {
-            /* Local demonstration data must not invalidate authentication. */
           }
         }
       })
@@ -96,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         registerActor(user);
       } catch {
-        /* Keep the valid backend session. */
       }
       return user;
     } catch (error) {

@@ -23,7 +23,6 @@ export function seedDemo(): DemoState {
     );
     if (Array.isArray(stored)) links = stored;
   } catch {
-    /* Preserve defaults for an invalid legacy value. */
   }
   links = links.map((link) => ({
     ...link,

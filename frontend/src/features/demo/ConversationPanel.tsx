@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "../auth/useAuth";
 import { markConversationRead, sendMessage } from "./actions";
 import { demoUsers, useDemo } from "./store";
+import { ErrorToast } from "../../components/ui/ErrorToast";
 export function ConversationPanel({
   patientId,
   sender,
@@ -27,7 +28,6 @@ export function ConversationPanel({
     try {
       markConversationRead(conversation.id, sender, patientId, currentUser!);
     } catch {
-      /* Keep the conversation visible if local saving fails. */
     }
   }, [conversation?.id, sender, unread, patientId, currentUser]);
   useEffect(() => {
@@ -99,7 +99,7 @@ export function ConversationPanel({
           Enviar
         </button>
       </form>
-      {error && <p role="alert">{error}</p>}
+      <ErrorToast message={error} />
     </article>
   );
 }

@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react";
+import { useErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
 import { useDemo } from "../../demo/store";
 import { saveProfessionalProfile } from "../../demo/actions";
 export function NutritionistProfilePage() {
+  const showError = useErrorToast();
   const { currentUser } = useAuth();
   const state = useDemo();
   const [form, setForm] = useState(
@@ -21,9 +23,7 @@ export function NutritionistProfilePage() {
       saveProfessionalProfile(form, currentUser!);
       setMessage("Perfil demonstrativo salvo.");
     } catch (error) {
-      setMessage(
-        (error as Error).message || "Não foi possível salvar neste navegador.",
-      );
+      showError(error instanceof Error ? error.message : "Não foi possível salvar neste navegador.");
     }
   }
   return (

@@ -29,9 +29,8 @@ export function AdminShell({ title, subtitle, children }: { title: string; subti
         <div className="admin-brand"><span>Nutri</span><b>+</b><small>Admin</small></div>
         <nav aria-label="Administração">
           <NavLink to="/app/admin" end><AdminIcon name="dashboard" /><span>Visão geral</span></NavLink>
-          <NavLink to="/app/admin/usuarios"><AdminIcon name="users" /><span>Usuários</span></NavLink>
+          <NavLink to="/app/admin/pacientes"><AdminIcon name="users" /><span>Pacientes</span></NavLink>
           <NavLink to="/app/admin/nutricionistas"><AdminIcon name="nutritionist" /><span>Nutricionistas</span></NavLink>
-          <NavLink to="/app/admin/vinculos"><AdminIcon name="link" /><span>Vínculos</span></NavLink>
           <NavLink to="/app/admin/chat"><AdminIcon name="chat" /><span>Chat</span></NavLink>
           <NavLink to="/app/admin/auditoria"><AdminIcon name="audit" /><span>Auditoria</span></NavLink>
           <NavLink to="/app/admin/configuracoes"><AdminIcon name="settings" /><span>Configurações</span></NavLink>
@@ -54,7 +53,7 @@ export function AdminShell({ title, subtitle, children }: { title: string; subti
   );
 }
 
-export function AdminIcon({ name }: { name: "dashboard" | "users" | "nutritionist" | "link" | "chat" | "audit" | "settings" | "logout" | "search" | "plus" | "edit" | "lock" | "unlock" | "trash" | "unlink" | "chevronLeft" | "chevronRight" }) {
+export function AdminIcon({ name }: { name: "dashboard" | "users" | "nutritionist" | "link" | "chat" | "audit" | "settings" | "logout" | "search" | "plus" | "invite" | "edit" | "lock" | "unlock" | "trash" | "unlink" | "chevronLeft" | "chevronRight" }) {
   const paths = {
     dashboard: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
     users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></>,
@@ -66,6 +65,7 @@ export function AdminIcon({ name }: { name: "dashboard" | "users" | "nutritionis
     logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></>,
     search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
     plus: <><path d="M12 5v14M5 12h14"/></>,
+    invite: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></>,
     edit: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4z"/></>,
     lock: <><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></>,
     unlock: <><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></>,

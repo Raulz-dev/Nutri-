@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { ApiError } from "../../../lib/http-client";
 import { forgotPasswordRequest } from "../api";
 
@@ -44,6 +45,7 @@ export function ForgotPasswordPage() {
       visualText="Seu acompanhamento continua quando você voltar."
     >
       <form className="login-form" onSubmit={handleSubmit} noValidate>
+        <ErrorToast message={error} />
         {message && (
           <div className="login-form__success" role="status">
             {message}
@@ -56,7 +58,6 @@ export function ForgotPasswordPage() {
           required
           placeholder="email@email.com"
           value={email}
-          error={error}
           onChange={(event) => setEmail(event.target.value)}
         />
         <Button type="submit" loading={loading} loadingLabel="Enviando...">

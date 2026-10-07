@@ -907,3 +907,16 @@
     color: #665874;
   }
 }
+.nutri-invitations{margin-bottom:22px;padding:24px}
+.nutri-invitations h2{margin:0 0 8px;font-size:20px}
+.nutri-invitations p{margin:0 0 18px;color:#897a98;font-size:13px;line-height:1.5}
+.nutri-invite-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.nutri-invite-form label{display:grid;gap:7px;flex:1 1 250px;font-size:12px;font-weight:700}
+.nutri-invite-form input{min-height:42px;padding:9px 12px;border:1px solid #ded5e9;border-radius:10px;font:inherit}
+.nutri-invite-form button{min-height:42px}
+.nutri-pending-invitations{margin-top:23px;border-top:1px solid #eee8f5;padding-top:18px}
+.nutri-pending-invitations h3{font-size:14px;margin:0 0 10px}
+.nutri-pending-invitations ul{list-style:none;padding:0;margin:0}
+.nutri-pending-invitations li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid #f1edf5;font-size:13px}
+.nutri-pending-invitations button{border:0;background:transparent;color:#7542ce;cursor:pointer;font-weight:700}
+.nutri-notice{color:#315e45;font-size:13px}

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { ErrorToast, useErrorToast } from "../../components/ui/ErrorToast";
 import { ApiError } from "../../lib/http-client";
 import { useAuth } from "./useAuth";
 
@@ -15,6 +16,7 @@ export function LoginForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
+  const showError = useErrorToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +30,7 @@ export function LoginForm() {
     else if (!/^\S+@\S+\.\S+$/.test(email)) nextErrors.email = "Informe um e-mail válido.";
     if (!password) nextErrors.password = "Informe sua senha.";
     setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) showError(Object.values(nextErrors).join(" "));
     return Object.keys(nextErrors).length === 0;
   }
 
@@ -50,11 +53,7 @@ export function LoginForm() {
 
   return (
     <form className="login-form" onSubmit={handleSubmit} noValidate>
-      {requestError && (
-        <div className="login-form__alert" role="alert">
-          {requestError}
-        </div>
-      )}
+      <ErrorToast message={requestError} />
       {searchParams.get("cadastro") === "sucesso" ? (
         <div className="login-form__success" role="status">
           Conta criada. Entre com seu e-mail e senha.

@@ -63,7 +63,7 @@ export function Field({
         {hint ? <small>{hint}</small> : null}
       </span>
       {control}
-      {error ? <em id={errorId}>{error}</em> : null}
+      {error ? <em className="visually-hidden-error" id={errorId}>{error}</em> : null}
     </label>
   );
 }

@@ -4,6 +4,7 @@ import { savePlan } from "../../demo/actions";
 import { useAuth } from "../../auth/useAuth";
 import { today } from "../../demo/store";
 import { Modal } from "./Modal";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 const newFood = (): Food => ({ id: crypto.randomUUID(), name: "", grams: 100 });
 const newMeal = (): Meal => ({
   id: crypto.randomUUID(),
@@ -256,11 +257,7 @@ export function PlanEditor({
           Os valores nutricionais são preenchidos manualmente. Publicar
           substitui o plano ativo e mantém o histórico.
         </p>
-        {error && (
-          <p role="alert" className="nutri-error">
-            {error}
-          </p>
-        )}
+        <ErrorToast message={error} />
         <div className="nutri-actions">
           <button type="submit">Salvar rascunho</button>
           <button

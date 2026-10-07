@@ -29,9 +29,9 @@ export function AdminDashboardPage() {
   return (
     <AdminShell title="Visão geral" subtitle="Indicadores e movimentações da base demonstrativa.">
       <section className="analytics-metrics" aria-label="Indicadores de usuários">
-        <Metric label="Total de usuários" value={counts.total} detail="Base cadastrada" href="/app/admin/usuarios" icon="users" />
-        <Metric label="Usuários ativos" value={counts.active} detail={`${activeRate}% da base`} href="/app/admin/usuarios?status=active" tone="green" icon="active" />
-        <Metric label="Usuários bloqueados" value={counts.blocked} detail="Precisam de atenção" href="/app/admin/usuarios?status=blocked" tone="red" icon="blocked" />
+        <Metric label="Total de usuários" value={counts.total} detail="Base cadastrada" icon="users" />
+        <Metric label="Usuários ativos" value={counts.active} detail={`${activeRate}% da base`} tone="green" icon="active" />
+        <Metric label="Usuários bloqueados" value={counts.blocked} detail="Precisam de atenção" tone="red" icon="blocked" />
         <Metric label="Novos em 30 dias" value={counts.recent} detail="Cadastros recentes" tone="orange" icon="growth" />
       </section>
 
@@ -48,7 +48,7 @@ export function AdminDashboardPage() {
 
       <section className="analytics-secondary-grid">
         <article className="admin-panel activity-panel">
-          <header className="analytics-panel-header"><div><span className="admin-section-label">Atividade</span><h2>Acessos recentes</h2><p>Últimas movimentações demonstrativas</p></div><Link to="/app/admin/usuarios">Ver todos</Link></header>
+          <header className="analytics-panel-header"><div><span className="admin-section-label">Atividade</span><h2>Acessos recentes</h2><p>Últimas movimentações demonstrativas</p></div></header>
           <div className="recent-users">
             {recentAccess.map((user) => <RecentUser key={user.id} user={user} />)}
             {!recentAccess.length ? <p className="analytics-empty">Nenhum acesso recente.</p> : null}
@@ -61,7 +61,7 @@ export function AdminDashboardPage() {
             <div className="active-rate-track" role="img" aria-label={`${activeRate}% dos usuários estão ativos`}><span style={{ width: `${activeRate}%` }} /></div>
             <div className="active-rate-legend"><span><i className="active" />{counts.active} ativos</span><span><i className="blocked" />{counts.blocked} bloqueados</span></div>
           </article>
-          <Link className="analytics-manage-link" to="/app/admin/usuarios"><span><small>Acesso rápido</small><strong>Gerenciar usuários</strong></span><AdminIcon name="users" /></Link>
+          <Link className="analytics-manage-link" to="/app/admin/pacientes"><span><small>Acesso rápido</small><strong>Gerenciar pacientes</strong></span><AdminIcon name="users" /></Link>
         </aside>
       </section>
     </AdminShell>
@@ -91,12 +91,13 @@ function RoleChart({ roles, total }: { roles: { role: UserRole; value: number }[
   const background = total ? `conic-gradient(${roleColors.patient} 0 ${patientEnd}%, ${roleColors.nutritionist} ${patientEnd}% ${nutritionistEnd}%, ${roleColors.admin} ${nutritionistEnd}% 100%)` : "#eeeaf2";
   return <div className="role-chart-layout">
     <div className="role-donut" role="img" aria-label={roles.map(({ role, value }) => `${roleLabels[role]}: ${value}`).join(", ")} style={{ background }}><span><strong>{total}</strong><small>Total</small></span></div>
-    <div className="role-chart-legend">{roles.map(({ role, value }) => <Link to={`/app/admin/usuarios?role=${role}`} key={role}><i style={{ background: roleColors[role] }} /><span><strong>{value}</strong><small>{roleLabels[role]}</small></span><b>{total ? Math.round((value / total) * 100) : 0}%</b></Link>)}</div>
+    <div className="role-chart-legend">{roles.map(({ role, value }) => <Link to={role === "patient" ? "/app/admin/pacientes" : role === "nutritionist" ? "/app/admin/nutricionistas" : "/app/admin"} key={role}><i style={{ background: roleColors[role] }} /><span><strong>{value}</strong><small>{roleLabels[role]}</small></span><b>{total ? Math.round((value / total) * 100) : 0}%</b></Link>)}</div>
   </div>;
 }
 
 function RecentUser({ user }: { user: AdminUser }) {
-  return <Link className="recent-user" to={`/app/admin/usuarios?q=${encodeURIComponent(user.email)}`}><span className="recent-user-avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabels[user.role]}</small></span><time dateTime={user.lastAccessAt ?? undefined}>{formatRelativeAccess(user.lastAccessAt)}</time></Link>;
+  const path = user.role === "patient" ? "/app/admin/pacientes" : user.role === "nutritionist" ? "/app/admin/nutricionistas" : "/app/admin";
+  return <Link className="recent-user" to={user.role === "admin" ? path : `${path}?q=${encodeURIComponent(user.email)}`}><span className="recent-user-avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabels[user.role]}</small></span><time dateTime={user.lastAccessAt ?? undefined}>{formatRelativeAccess(user.lastAccessAt)}</time></Link>;
 }
 
 function AnalyticsIcon({ name }: { name: "users" | "active" | "blocked" | "growth" }) {

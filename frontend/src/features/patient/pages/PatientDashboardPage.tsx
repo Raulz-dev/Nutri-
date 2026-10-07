@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "../../auth/useAuth";
 import { PatientIcon, type IconName } from "../components/PatientIcon";
+import { PatientLinkInvitations } from "../components/PatientLinkInvitations";
 import { type PatientSection } from "../mocks/patient-data";
 import { HomeSection } from "../sections/HomeSection";
 import { MealPlanSection } from "../sections/MealPlanSection";
@@ -113,6 +114,8 @@ function PatientDashboardContent() {
             <button className="patient-avatar" type="button" onClick={() => navigateToSection("profile")} aria-label="Abrir perfil">{initials(patientData.fullName)}</button>
           </div>
         </header>
+
+        {!previewId && <PatientLinkInvitations />}
 
         {section === "home" ? <HomeSection onNavigate={navigateToSection} /> : null}
         {section === "meal-plan" ? <MealPlanSection /> : null}

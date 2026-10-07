@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
+import { ErrorToast, useErrorToast } from "../../../components/ui/ErrorToast";
 import { ApiError } from "../../../lib/http-client";
 import { registerPatientRequest } from "../api";
 
@@ -11,6 +12,7 @@ type RegisterErrors = Partial<Record<"name" | "email" | "password" | "confirmati
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const showError = useErrorToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,6 +28,7 @@ export function RegisterPage() {
     if (password.length < 8) nextErrors.password = "A senha deve ter pelo menos 8 caracteres.";
     if (confirmation !== password) nextErrors.confirmation = "As senhas não correspondem.";
     setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) showError(Object.values(nextErrors).join(" "));
     return Object.keys(nextErrors).length === 0;
   }
 
@@ -61,7 +64,7 @@ export function RegisterPage() {
       image="/assets/register-healthy.webp"
     >
       <form className="login-form" onSubmit={handleSubmit} noValidate>
-        {requestError ? <div className="login-form__alert" role="alert">{requestError}</div> : null}
+        <ErrorToast message={requestError} />
         <Input label="Nome completo" name="name" autoComplete="name" required
           value={name} error={errors.name} onChange={(event) => setName(event.target.value)} />
         <Input label="E-mail" name="email" type="email" autoComplete="email" required

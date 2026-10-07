@@ -34,7 +34,6 @@ export function DemoRecoveryNotice() {
           try {
             localStorage.removeItem(DEMO_RECOVERY_KEY);
           } catch {
-            /* The notice can still be dismissed. */
           }
           setBackupKey(null);
         }}

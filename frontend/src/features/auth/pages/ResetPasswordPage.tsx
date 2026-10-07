@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { ApiError } from "../../../lib/http-client";
 import { resetPasswordRequest } from "../api";
 
@@ -61,7 +62,7 @@ export function ResetPasswordPage() {
       visualText="Seu acompanhamento continua quando você voltar."
     >
       <form className="login-form" onSubmit={handleSubmit} noValidate>
-        {error && <div className="login-form__alert" role="alert">{error}</div>}
+        <ErrorToast message={error} />
         {message && <div className="login-form__success" role="status">{message}</div>}
         <Input label="Nova senha" type="password" name="new-password"
           autoComplete="new-password" required minLength={8} value={password}

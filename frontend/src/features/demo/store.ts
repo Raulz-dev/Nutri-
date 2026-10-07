@@ -27,7 +27,6 @@ export function readDemo(): DemoState {
         return state;
       }
     } catch {
-      /* Recover malformed JSON below. */
     }
     try {
       const backupKey = `${DEMO_KEY}-backup-${Date.now()}`;
@@ -37,7 +36,6 @@ export function readDemo(): DemoState {
       try {
         localStorage.setItem(DEMO_RECOVERY_KEY, backupKey);
       } catch {
-        /* The recovered data remains available. */
       }
     } catch {
       unreadableState = true;
@@ -71,7 +69,6 @@ export function useDemo() {
     }
     window.addEventListener(EVENT, refresh);
     window.addEventListener("storage", refresh);
-    // Refresh expiry-dependent views when returning to the tab or after midnight.
     window.addEventListener("focus", refresh);
     const timer = window.setInterval(refresh, 60_000);
     return () => {

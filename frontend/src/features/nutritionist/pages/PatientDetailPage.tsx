@@ -13,6 +13,7 @@ import { closePlan, saveFollowUp } from "../../demo/actions";
 import type { Plan } from "../../demo/types";
 import { emptyPatientIntake } from "../../patient/patient-intake";
 import { TablePagination } from "../../../components/shared/TablePagination";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { usePagination } from "../../../hooks/usePagination";
 import { PlanEditor } from "../components/PlanEditor";
 import { PatientEvolution } from "../components/PatientEvolution";
@@ -109,11 +110,7 @@ export function NutritionistPatientDetailPage() {
           </button>
         ))}
       </nav>
-      {error && (
-        <p role="alert" className="nutri-error">
-          {error}
-        </p>
-      )}
+      <ErrorToast message={error} />
       {tab === "resumo" && (
         <>
           <div className="nutri-columns">

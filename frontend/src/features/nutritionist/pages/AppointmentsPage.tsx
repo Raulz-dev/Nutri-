@@ -5,6 +5,7 @@ import { dateLabel, demoUsers, useDemo } from "../../demo/store";
 import { saveAppointment } from "../../demo/actions";
 import type { Appointment } from "../../demo/types";
 import { TablePagination } from "../../../components/shared/TablePagination";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { usePagination } from "../../../hooks/usePagination";
 import { AppointmentForm } from "../components/AppointmentForm";
 const statuses = {
@@ -97,11 +98,7 @@ export function NutritionistAppointmentsPage() {
           Agendar consulta
         </button>
       </div>
-      {error && (
-        <p role="alert" className="nutri-error">
-          {error}
-        </p>
-      )}
+      <ErrorToast message={error} />
       <section className="nutri-card nutri-table-card">
         <table>
           <thead>

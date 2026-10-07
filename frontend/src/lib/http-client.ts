@@ -16,14 +16,19 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, headers, ...requestInit } = options;
-  const response = await fetch(`${env.apiUrl}${path}`, {
-    ...requestInit,
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${env.apiUrl}${path}`, {
+      ...requestInit,
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+  } catch {
+    throw new ApiError("Não foi possível conectar ao servidor.", 0);
+  }
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { detail?: unknown } | null;

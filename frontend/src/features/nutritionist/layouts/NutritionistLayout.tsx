@@ -1,6 +1,6 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { initials, useDemo } from "../../demo/store";
+import { initials } from "../../demo/store";
 import {
   PatientIcon,
   type IconName,
@@ -16,9 +16,9 @@ const items: { path: string; label: string; icon: IconName }[] = [
 ];
 export function NutritionistLayout() {
   const { currentUser, logout } = useAuth();
-  const state = useDemo();
+  const location = useLocation();
   const navigate = useNavigate();
-  const name = state.profiles[currentUser!.id]?.name || currentUser!.name;
+  const name = currentUser!.name;
   return (
     <div className="nutri-app">
       <aside className="nutri-sidebar">
@@ -61,7 +61,9 @@ export function NutritionistLayout() {
       </aside>
       <main className="nutri-main">
         <div className="nutri-demo-label">
-          Demonstração · alterações salvas neste navegador
+          {location.pathname === "/app/nutricionista/pacientes"
+            ? "Pacientes vinculados · dados salvos na plataforma"
+            : "Demonstração · alterações salvas neste navegador"}
         </div>
         <Outlet />
       </main>

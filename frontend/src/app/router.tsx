@@ -3,6 +3,7 @@ import { NutritionistLayout } from "../features/nutritionist/layouts/Nutritionis
 import { NutritionistDashboardPage } from "../features/nutritionist/pages/DashboardPage";
 import { NutritionistPatientsPage } from "../features/nutritionist/pages/PatientsPage";
 import { ReadOnlyPatientPreview } from "../features/nutritionist/pages/ReadOnlyPatientPreview";
+import { ClinicalPatientPage } from "../features/nutritionist/pages/ClinicalPatientPage";
 import { NutritionistAppointmentsPage } from "../features/nutritionist/pages/AppointmentsPage";
 import { NutritionistMessagesPage } from "../features/nutritionist/pages/MessagesPage";
 import { NutritionistProfilePage } from "../features/nutritionist/pages/ProfilePage";
@@ -42,7 +43,7 @@ export function AppRouter() {
           <Route path="/app/nutricionista" element={<NutritionistLayout />}>
             <Route index element={<NutritionistDashboardPage />} />
             <Route path="pacientes" element={<NutritionistPatientsPage />} />
-            <Route path="pacientes/:patientId" element={<ReadOnlyPatientPreview />} />
+            <Route path="pacientes/:patientId" element={<ClinicalPatientPage />} />
             <Route path="consultas" element={<NutritionistAppointmentsPage />} />
             <Route path="mensagens" element={<NutritionistMessagesPage />} />
             <Route path="perfil" element={<NutritionistProfilePage />} />

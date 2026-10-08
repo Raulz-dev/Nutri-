@@ -1,3 +1,9 @@
+from app.care.clinical_models import (
+    FollowUpModel,
+    MeasurementModel,
+    PatientIntakeRevisionModel,
+    WeightGoalRevisionModel,
+)
 from app.care.models import (
     CareAssignmentModel,
     CareLinkInvitationModel,
@@ -13,6 +19,10 @@ from app.users.infrastructure.models import (
 )
 
 __all__ = [
+    "FollowUpModel",
+    "MeasurementModel",
+    "PatientIntakeRevisionModel",
+    "WeightGoalRevisionModel",
     "CareAssignmentModel",
     "CareLinkInvitationModel",
     "EmailOutboxModel",

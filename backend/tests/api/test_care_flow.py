@@ -288,6 +288,57 @@ async def test_deactivation_cancels_pending_invitation():
 
 
 @pytest.mark.asyncio
+async def test_pending_invitation_prevents_nutritionist_email_change():
+    admin_email = f"admin-{uuid7()}@example.com"
+    original_email = f"nutritionist-{uuid7()}@example.com"
+    new_email = f"nutritionist-{uuid7()}@example.com"
+    async with AsyncSessionLocal() as db, db.begin():
+        db.add(
+            UserModel(
+                id=uuid7(),
+                name="Admin Convite",
+                email=admin_email,
+                password_hash=PasswordHasher().hash("TestPassword123!"),
+                role=UserRole.ADMIN,
+                status=UserStatus.ACTIVE,
+            )
+        )
+    with TestClient(app) as client:
+        access = client.post(
+            "/api/v1/auth/login", json={"email": admin_email, "password": "TestPassword123!"}
+        ).json()["access_token"]
+        headers = {"Authorization": f"Bearer {access}"}
+        invited = client.post(
+            "/api/v1/admin/invitations",
+            headers=headers,
+            json={"name": "Nutri Convidada", "email": original_email},
+        )
+        assert invited.status_code == 201, invited.text
+        user_id = invited.json()["id"]
+        changed = client.patch(
+            f"/api/v1/users/{user_id}", headers=headers, json={"email": new_email}
+        )
+        assert changed.status_code == 409, changed.text
+        changed_role = client.patch(
+            f"/api/v1/users/{user_id}", headers=headers, json={"role": "patient"}
+        )
+        assert changed_role.status_code == 409, changed_role.text
+        unchanged = client.get(f"/api/v1/users/{user_id}", headers=headers)
+        assert unchanged.json()["email"] == original_email
+        assert unchanged.json()["role"] == "nutritionist"
+
+        async with AsyncSessionLocal() as db:
+            invitation = await db.scalar(
+                select(InvitationModel).where(InvitationModel.user_id == user_id)
+            )
+            outbox = await db.scalar(
+                select(EmailOutboxModel).where(EmailOutboxModel.invitation_id == invitation.id)
+            )
+            assert invitation.used_at is None
+            assert outbox.payload is not None
+
+
+@pytest.mark.asyncio
 async def test_expired_invitation_fails():
     admin_email = f"admin-{uuid7()}@example.com"
     nutritionist_email = f"nutritionist-{uuid7()}@example.com"

@@ -5,6 +5,8 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { PatientIcon, type IconName } from "../components/PatientIcon";
 import { PatientLinkInvitations } from "../components/PatientLinkInvitations";
+import { PatientClinicalProvider, usePatientClinical } from "../../care/PatientClinicalContext";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { type PatientSection } from "../mocks/patient-data";
 import { HomeSection } from "../sections/HomeSection";
 import { MealPlanSection } from "../sections/MealPlanSection";
@@ -33,14 +35,17 @@ const sectionsBySlug: Record<string, PatientSection> = {
 
 export function PatientDashboardPage() {
   const { patientId } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, session } = useAuth();
   const state = useDemo();
   if (patientId && (!state.links.some(l => l.patientId === patientId && l.nutritionistId === currentUser?.id) || !demoUsers(state).some(u => u.id === patientId))) return <Navigate to="/app/nutricionista/pacientes" replace />;
-  return <PatientContext.Provider value={patientId ?? null}><PatientDashboardContent key={patientId ?? currentUser?.id}/></PatientContext.Provider>;
+  return <PatientClinicalProvider token={session?.accessToken ?? ""} patientId={currentUser!.id}>
+    <PatientContext.Provider value={patientId ?? null}><PatientDashboardContent key={patientId ?? currentUser?.id}/></PatientContext.Provider>
+  </PatientClinicalProvider>;
 }
 
 function PatientDashboardContent() {
   const { view: patientData, patientId, state } = usePatientData();
+  const clinical = usePatientClinical();
   const { patientId: previewId } = useParams();
   const basePath = previewId ? `/app/nutricionista/pacientes/${previewId}/previa` : "/app/paciente";
   const menu = navigation.map(item => ({ ...item, path: item.path.replace("/app/paciente", basePath) }));
@@ -103,6 +108,7 @@ function PatientDashboardContent() {
       </aside>
 
       <section className={`patient-content${hasFixedView ? " has-fixed-view" : ""}${section === "messages" ? " has-chat" : ""}`}>
+        <ErrorToast message={clinical.error} />
         {previewId && <div className="patient-preview-notice"><span>Prévia demonstrativa · {patientData.fullName}</span><Link to={`/app/nutricionista/pacientes/${previewId}`}>Voltar ao acompanhamento</Link></div>}
         <header className="patient-header">
           <div>

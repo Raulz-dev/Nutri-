@@ -61,7 +61,7 @@ export function NutritionistLayout() {
       </aside>
       <main className="nutri-main">
         <div className="nutri-demo-label">
-          {location.pathname === "/app/nutricionista/pacientes"
+          {location.pathname.startsWith("/app/nutricionista/pacientes")
             ? "Pacientes vinculados · dados salvos na plataforma"
             : "Demonstração · alterações salvas neste navegador"}
         </div>

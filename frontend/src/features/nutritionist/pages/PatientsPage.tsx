@@ -91,7 +91,7 @@ export function NutritionistPatientsPage() {
     </section>
     <div className="nutri-toolbar"><label>Buscar paciente<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Nome" /></label></div>
     <section className="nutri-card nutri-table-card"><table><thead><tr><th>Paciente</th><th>Status</th><th>Acompanhamento</th></tr></thead><tbody>
-      {rows.map((patient) => <tr key={patient.id}><td data-label="Paciente"><div className="nutri-person"><b>{patient.name.slice(0, 1)}</b><span>{patient.name}<small>{patient.email}</small></span></div></td><td data-label="Status">{patient.status === "active" ? "Ativo" : "Bloqueado"}</td><td><Link to={`/app/nutricionista/pacientes/${patient.id}/previa`}>Ver dados autorizados →</Link></td></tr>)}
+      {rows.map((patient) => <tr key={patient.id}><td data-label="Paciente"><div className="nutri-person"><b>{patient.name.slice(0, 1)}</b><span>{patient.name}<small>{patient.email}</small></span></div></td><td data-label="Status">{patient.status === "active" ? "Ativo" : "Bloqueado"}</td><td><Link to={`/app/nutricionista/pacientes/${patient.id}`}>Abrir acompanhamento →</Link></td></tr>)}
       {!rows.length && <tr><td colSpan={3} className="nutri-empty">Nenhum paciente vinculado.</td></tr>}
     </tbody></table><TablePagination page={page} totalPages={Math.max(1, Math.ceil(total / 10))} onPageChange={setPage} /></section>
   </>;

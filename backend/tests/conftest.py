@@ -5,3 +5,4 @@ os.environ.setdefault(
 )
 os.environ.setdefault("JWT_SECRET", "test-secret-with-at-least-thirty-two-characters")
 os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("AUTH_RATE_LIMIT", "10000")

@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { type PatientIntake, emptyPatientIntake } from "../patient-intake";
 import { usePatientData } from "../../demo/PatientContext";
-import { savePatientPreferences } from "../../demo/actions";
 import { useAuth } from "../../auth/useAuth";
 import { useErrorToast } from "../../../components/ui/ErrorToast";
+import { usePatientClinical } from "../../care/PatientClinicalContext";
+import { saveIntake } from "../../care/clinical-api";
 
 import { Field, IntakeCard, RestrictionTags, TagInput } from "../components/preferences/IntakeFields";
 
@@ -13,11 +14,13 @@ type SaveStatus = "idle" | "success";
 type NumericErrors = Partial<Record<"mealsPerDay" | "waterLiters" | "sleepHours", string>>;
 
 export function PatientPreferencesSection() {
-  const { state, patientId } = usePatientData();
-  const { currentUser } = useAuth();
+  const { patientId } = usePatientData();
+  const clinical = usePatientClinical();
+  const { session } = useAuth();
   const showError = useErrorToast();
-  const [intake, setIntake] = useState(() => structuredClone(state.intakes[patientId] ?? emptyPatientIntake));
-  const savedIntake = JSON.stringify(state.intakes[patientId] ?? emptyPatientIntake);
+  const [intake, setIntake] = useState(() => structuredClone(emptyPatientIntake));
+  const [busy, setBusy] = useState(false);
+  const savedIntake = JSON.stringify(clinical.intake?.intake ?? emptyPatientIntake);
   useEffect(() => { setIntake(JSON.parse(savedIntake) as PatientIntake); }, [savedIntake]);
   const [goalError, setGoalError] = useState(false);
   const [numericErrors, setNumericErrors] = useState<NumericErrors>({});
@@ -32,7 +35,7 @@ export function PatientPreferencesSection() {
     setSaveStatus("idle");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextNumericErrors: NumericErrors = {
       mealsPerDay: validateOptionalNumber(intake.routine.mealsPerDay, 1, 12, 1, "Informe entre 1 e 12 refeições inteiras."),
@@ -53,12 +56,14 @@ export function PatientPreferencesSection() {
     }
 
     setGoalError(false);
+    setBusy(true);
     try {
-      savePatientPreferences(patientId, intake, currentUser!);
+      const saved = await saveIntake(session?.accessToken ?? "", patientId, intake, clinical.intake?.revision ?? 0);
+      clinical.acceptIntake(saved);
       setSaveStatus("success");
-    } catch {
-      showError("Não foi possível salvar. Tente novamente.");
-    }
+    } catch (reason) {
+      showError(reason instanceof Error ? reason.message : "Não foi possível salvar. Tente novamente.");
+    } finally { setBusy(false); }
   }
 
   return (
@@ -106,7 +111,7 @@ export function PatientPreferencesSection() {
           <TagInput label="Alimentos que prefere evitar" placeholder="Ex.: frituras" values={intake.food.avoided} maxItems={20} onChange={(avoided) => updateGroup("food", { avoided })} />
           <div className="intake-grid two-columns">
             <Field label="Padrão alimentar">
-              <select value={intake.food.pattern} onChange={(event) => updateGroup("food", { pattern: event.target.value as PatientIntake["food"]["pattern"] })}>
+              <select value={intake.food.pattern} onChange={(event) => updateGroup("food", { pattern: event.target.value as PatientIntake["food"]["pattern"], otherPattern: event.target.value === "other" ? intake.food.otherPattern : "" })}>
                 <option value="">Selecione uma opção</option>
                 <option value="omnivore">Onívoro</option>
                 <option value="vegetarian">Vegetariano</option>
@@ -241,9 +246,9 @@ export function PatientPreferencesSection() {
 
       <footer className="intake-actions">
         <div aria-live="polite">
-          {saveStatus === "success" ? <p className="intake-feedback is-success">Informações salvas neste dispositivo.</p> : null}
+          {saveStatus === "success" ? <p className="intake-feedback is-success">Informações salvas na plataforma.</p> : null}
         </div>
-        <button type="submit">Salvar informações</button>
+        <button type="submit" disabled={busy || clinical.loading}>{busy ? "Salvando..." : "Salvar informações"}</button>
       </footer>
     </form>
   );

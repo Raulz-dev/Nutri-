@@ -7,27 +7,22 @@ import {
   nextAppointment,
   useDemo,
 } from "./store";
+import { usePatientClinical } from "../care/PatientClinicalContext";
 export const PatientContext = createContext<string | null>(null);
 export function usePatientData() {
   const previewId = useContext(PatientContext);
   const { currentUser } = useAuth();
+  const clinical = usePatientClinical();
   const state = useDemo();
   const patientId = previewId ?? currentUser!.id;
-  const patient =
-    demoUsers(state).find((u) => u.id === patientId) ?? currentUser!;
-  const owner = state.links.find(
-    (l) => l.patientId === patientId,
-  )?.nutritionistId;
-  const nutritionist =
-    state.profiles[owner ?? ""]?.name ||
-    demoUsers(state).find((u) => u.id === owner)?.name ||
-    "Sem nutricionista";
+  const patient = clinical.patient ?? currentUser!;
+  const owner = clinical.patient?.nutritionist_id ?? undefined;
+  const nutritionist = clinical.patient?.nutritionist_name ?? "Sem nutricionista";
   const plan = activePlan(state, patientId);
   const appointment = nextAppointment(state, patientId);
-  const history = state.measurements
-    .filter((m) => m.patientId === patientId)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const history = clinical.measurements;
   const latest = history.at(-1);
+  const first = clinical.firstMeasurement;
   const fmt = (n: number) => n.toLocaleString("pt-BR");
   const meals = [...(plan?.meals ?? [])]
     .sort((a, b) => a.time.localeCompare(b.time))
@@ -53,16 +48,16 @@ export function usePatientData() {
     nutritionist,
     currentWeight: latest ? `${fmt(latest.weight)} kg` : "Sem registro",
     weightChange:
-      latest && history.length > 1
-        ? `${fmt(latest.weight - history[0].weight)} kg desde o início`
+      latest && first && clinical.measurementTotal > 1
+        ? `${fmt(latest.weight - first.weight)} kg desde o início`
         : "Sem variação registrada",
     bodyFat:
       latest?.bodyFat != null ? `${fmt(latest.bodyFat)}%` : "Sem registro",
     bodyFatChange:
       latest?.bodyFat != null &&
-      history[0]?.bodyFat != null &&
-      history.length > 1
-        ? `${fmt(latest.bodyFat - history[0].bodyFat)} pontos percentuais desde o início`
+      first?.bodyFat != null &&
+      clinical.measurementTotal > 1
+        ? `${fmt(latest.bodyFat - first.bodyFat)} pontos percentuais desde o início`
         : "Última medição",
     dailyCalories: plan
       ? `${fmt(plan.meals.reduce((n, m) => n + m.calories, 0))} kcal`

@@ -94,6 +94,22 @@ class SQLAlchemyUserRepository(UserRepository):
             raise UserConflictError("Conta desativada.")
         if user.role == UserRole.NUTRITIONIST and model.role != UserRole.NUTRITIONIST:
             raise UserConflictError("Nutricionistas devem ser cadastrados por convite.")
+        if (
+            model.role == UserRole.NUTRITIONIST
+            and model.status == UserStatus.BLOCKED
+            and model.credentials_changed_at is None
+            and (user.email != model.email or user.role != model.role)
+        ):
+            pending_invite = await self._db.scalar(
+                select(InvitationModel.id)
+                .where(
+                    InvitationModel.user_id == user.id,
+                    InvitationModel.used_at.is_(None),
+                )
+                .limit(1)
+            )
+            if pending_invite:
+                raise UserConflictError("Resolva o convite antes de alterar e-mail ou perfil.")
         if model and model.status == UserStatus.BLOCKED and user.status == UserStatus.ACTIVE:
             pending_invite = await self._db.scalar(
                 select(InvitationModel.id)

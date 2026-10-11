@@ -8,10 +8,9 @@ export function loginRequest(credentials: LoginCredentials) {
   });
 }
 
-export function logoutRequest(refreshToken: string) {
+export function logoutRequest() {
   return apiRequest<void>("/auth/logout", {
     method: "POST",
-    body: JSON.stringify({ refresh_token: refreshToken }),
   });
 }
 

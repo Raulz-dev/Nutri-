@@ -1,5 +1,5 @@
 import { PatientContext, usePatientData } from "../../demo/PatientContext";
-import { useDemo, demoUsers, initials } from "../../demo/store";
+import { initials } from "../../demo/store";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "../../auth/useAuth";
@@ -36,8 +36,6 @@ const sectionsBySlug: Record<string, PatientSection> = {
 export function PatientDashboardPage() {
   const { patientId } = useParams();
   const { currentUser, session } = useAuth();
-  const state = useDemo();
-  if (patientId && (!state.links.some(l => l.patientId === patientId && l.nutritionistId === currentUser?.id) || !demoUsers(state).some(u => u.id === patientId))) return <Navigate to="/app/nutricionista/pacientes" replace />;
   return <PatientClinicalProvider token={session?.accessToken ?? ""} patientId={currentUser!.id}>
     <PatientContext.Provider value={patientId ?? null}><PatientDashboardContent key={patientId ?? currentUser?.id}/></PatientContext.Provider>
   </PatientClinicalProvider>;

@@ -6,6 +6,16 @@ export type PatientRow = { id: string; name: string; email: string; status: "act
 export type Assignment = { patient_id: string; nutritionist_id: string; started_at: string };
 export type LinkInvitation = { id: string; patient_id: string; patient_name: string; nutritionist_id: string; nutritionist_name: string; expires_at: string };
 export type InvitationDeliveryStatus = { user_id: string; status: "pending" | "sent" | "failed" | "expired"; resend_available_at: string | null };
+export type AdminDashboard = {
+  as_of: string; total: number; active: number; blocked: number; deactivated: number;
+  recent_registrations: number; roles: Record<"patient" | "nutritionist" | "admin", number>;
+  months: { month: string; total: number }[];
+  recent_accesses: { id: string; name: string; email: string; role: "patient" | "nutritionist" | "admin"; last_access_at: string }[];
+  failed_invitation_deliveries: number; delayed_invitation_deliveries: number;
+};
+export const getAdminDashboard = (token: string) => apiRequest<AdminDashboard>("/dashboards/admin", { token });
+export type NutritionistPlanSummary = { as_of: string; active_plans: number; patients_without_plan: number; pending_patients: { id: string; name: string }[] };
+export const getNutritionistPlanSummary = (token: string) => apiRequest<NutritionistPlanSummary>("/dashboards/nutritionist/plans", { token });
 
 export const listUsers = (token: string, offset = 0, limit = 100) =>
   apiRequest<Page<User>>(`/users?offset=${offset}&limit=${limit}`, { token });

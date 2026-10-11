@@ -36,7 +36,7 @@ export function ProfilePage() {
             <span className="eyebrow">Login realizado</span>
             <h1>Olá, {user.name}</h1>
             <p>{user.email}</p>
-            <Link to="/app/paciente">Ver demonstração da área do paciente</Link>
+            <Link to={user.role === "admin" ? "/app/admin" : user.role === "nutritionist" ? "/app/nutricionista" : "/app/paciente"}>Abrir minha área</Link>
             <button className="button" type="button" onClick={handleLogout}>
               Sair
             </button>

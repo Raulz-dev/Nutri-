@@ -1,3 +1,4 @@
+import { SupportPanel } from "../features/care/SupportPanel";
 import { NutritionistRoute } from "../routes/NutritionistRoute";
 import { NutritionistLayout } from "../features/nutritionist/layouts/NutritionistLayout";
 import { NutritionistDashboardPage } from "../features/nutritionist/pages/DashboardPage";
@@ -47,6 +48,7 @@ export function AppRouter() {
             <Route path="consultas" element={<NutritionistAppointmentsPage />} />
             <Route path="mensagens" element={<NutritionistMessagesPage />} />
             <Route path="perfil" element={<NutritionistProfilePage />} />
+            <Route path="suporte" element={<><header className="nutri-heading"><h1>Suporte</h1><p>Converse com a administração.</p></header><SupportPanel /></>} />
           </Route>
         </Route>
         <Route path="/app/perfil" element={<ProfilePage />} />

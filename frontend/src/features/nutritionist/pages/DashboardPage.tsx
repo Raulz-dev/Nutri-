@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
-import { listPatients } from "../../care/api";
+import { getNutritionistPlanSummary, listPatients, type NutritionistPlanSummary } from "../../care/api";
 import { listAllConversations, listAppointments, type AppointmentRecord } from "../../care/interaction-api";
 import { dateLabel } from "../../demo/store";
 
@@ -13,6 +13,7 @@ export function NutritionistDashboardPage() {
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [appointmentTotal, setAppointmentTotal] = useState<number | null>(null);
   const [unread, setUnread] = useState<number | null>(null);
+  const [plans, setPlans] = useState<NutritionistPlanSummary | null>(null);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
@@ -26,6 +27,10 @@ export function NutritionistDashboardPage() {
     setAppointments(upcoming.slice(0, 5));
     setAppointmentTotal(scheduled.total);
     setUnread(conversations.reduce((total, conversation) => total + conversation.unread, 0));
+    setPlans(null);
+    const planSummary = await getNutritionistPlanSummary(token);
+    setPlans(planSummary);
+    setError("");
   }, [token]);
 
   useEffect(() => {
@@ -39,13 +44,15 @@ export function NutritionistDashboardPage() {
     <ErrorToast message={error} />
     {error && <button type="button" onClick={() => { setError(""); void refresh().catch(reason => setError(reason instanceof Error ? reason.message : "Não foi possível carregar o painel.")); }}>Tentar novamente</button>}
     <div className="nutri-metrics">
-      {[["Pacientes vinculados", patientTotal ?? "—"], ["Próximas consultas", appointmentTotal ?? "—"], ["Mensagens não lidas", unread ?? "—"]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}
+      {[["Pacientes vinculados", patientTotal ?? "—"], ["Planos vigentes", plans?.active_plans ?? "—"], ["Próximas consultas", appointmentTotal ?? "—"], ["Mensagens não lidas", unread ?? "—"]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}
     </div>
     <div className="nutri-columns">
-      <section className="nutri-card"><header><h2>Planos alimentares</h2><Link to="/app/nutricionista/pacientes">Ver pacientes</Link></header><p className="nutri-muted">Consulte e gerencie o plano de cada paciente em Meus pacientes.</p></section>
+      <section className="nutri-card"><header><h2>Planos alimentares</h2><Link to="/app/nutricionista/pacientes">Ver pacientes</Link></header>
+        {plans?.patients_without_plan ? <><p className="nutri-muted">{plans.patients_without_plan} paciente(s) sem plano vigente.</p>{plans.pending_patients.map(patient => <Link className="nutri-list-row" key={patient.id} to={`/app/nutricionista/pacientes/${patient.id}`}><strong>{patient.name}</strong><span>Preparar plano</span></Link>)}</> : <p className="nutri-muted">{plans ? "Todos os pacientes vinculados têm plano vigente." : error ? "Planos indisponíveis no momento." : "Carregando planos…"}</p>}
+      </section>
       <section className="nutri-card"><header><h2>Próximas consultas</h2><Link to="/app/nutricionista/consultas">Ver agenda</Link></header>
         {appointments.map(item => <Link className="nutri-list-row" key={item.id} to={`/app/nutricionista/pacientes/${item.patientId}`}><strong>{item.patientName}</strong><span>{dateLabel(item.date)} · {item.time}</span></Link>)}
-        {!appointments.length && <p className="nutri-empty">Nenhuma consulta agendada.</p>}
+        {appointmentTotal === 0 && <p className="nutri-empty">Nenhuma consulta agendada.</p>}
       </section>
     </div>
   </>;

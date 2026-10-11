@@ -1,38 +1,43 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
-import type { User, UserRole } from "../../users/types";
+import { getAdminDashboard, type AdminDashboard } from "../../care/api";
+import type { UserRole } from "../../users/types";
 import { AdminIcon, AdminShell } from "../AdminShell";
-import { readAdminUsers, type AdminUser } from "../admin-users";
 
 const roleLabels: Record<UserRole, string> = { patient: "Pacientes", nutritionist: "Nutricionistas", admin: "Administradores" };
 const roleColors: Record<UserRole, string> = { patient: "#7142cd", nutritionist: "#2f927b", admin: "#d28a3e" };
 
 export function AdminDashboardPage() {
-  const { currentUser } = useAuth();
-  const demoUsers = readAdminUsers().filter((user) => user.id !== currentUser?.id && user.email.toLowerCase() !== currentUser?.email.toLowerCase());
-  const users: User[] = currentUser ? [currentUser, ...demoUsers] : demoUsers;
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(now.getDate() - 30);
-  const counts = {
-    total: users.length,
-    active: users.filter((user) => user.status === "active").length,
-    blocked: users.filter((user) => user.status === "blocked").length,
-    recent: demoUsers.filter((user) => new Date(user.createdAt) >= thirtyDaysAgo).length,
-  };
-  const roles = (["patient", "nutritionist", "admin"] as const).map((role) => ({ role, value: users.filter((user) => user.role === role).length }));
-  const months = buildMonthlySeries(demoUsers, now);
-  const recentAccess = [...demoUsers].filter((user) => user.lastAccessAt).sort((a, b) => Date.parse(b.lastAccessAt ?? "") - Date.parse(a.lastAccessAt ?? "")).slice(0, 5);
-  const activeRate = counts.total ? Math.round((counts.active / counts.total) * 100) : 0;
+  const { session } = useAuth();
+  const token = session?.accessToken ?? "";
+  const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
+  const [error, setError] = useState("");
+  const refresh = useCallback(async () => {
+    const result = await getAdminDashboard(token);
+    setDashboard(result);
+    setError("");
+  }, [token]);
+  useEffect(() => { void refresh().catch(reason => setError(reason instanceof Error ? reason.message : "Não foi possível carregar o painel.")); }, [refresh]);
+  const counts = dashboard ?? { total: 0, active: 0, blocked: 0, recent_registrations: 0 };
+  const roles = (["patient", "nutritionist", "admin"] as const).map((role) => ({ role, value: dashboard?.roles[role] ?? 0 }));
+  const months = (dashboard?.months ?? []).map(item => ({ key: item.month, label: new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" }).format(new Date(`${item.month}-01T12:00:00Z`)).replace(".", ""), value: item.total }));
+  const activeRate = counts?.total ? Math.round((counts.active / counts.total) * 100) : 0;
 
   return (
-    <AdminShell title="Visão geral" subtitle="Indicadores e movimentações da base demonstrativa.">
+    <AdminShell title="Visão geral" subtitle="Indicadores e movimentações da plataforma.">
+      <ErrorToast message={error} />
+      {error && <button type="button" className="admin-primary-button" onClick={() => void refresh().catch(reason => setError(reason instanceof Error ? reason.message : "Não foi possível carregar o painel."))}>Tentar novamente</button>}
+      {!dashboard && !error && <p role="status">Carregando indicadores…</p>}
+      {dashboard && <>
+      {(dashboard.failed_invitation_deliveries > 0 || dashboard.delayed_invitation_deliveries > 0) && <section className="admin-panel" role="status" aria-label="Alertas de convites"><h2>Alertas de convites</h2><p>{dashboard.failed_invitation_deliveries} envio(s) com falha · {dashboard.delayed_invitation_deliveries} envio(s) atrasado(s)</p><Link to="/app/admin/nutricionistas">Ver nutricionistas</Link></section>}
       <section className="analytics-metrics" aria-label="Indicadores de usuários">
-        <Metric label="Total de usuários" value={counts.total} detail="Base cadastrada" icon="users" />
+        <Metric label="Total de usuários" value={counts.total} detail="Contas não desativadas" icon="users" />
         <Metric label="Usuários ativos" value={counts.active} detail={`${activeRate}% da base`} tone="green" icon="active" />
         <Metric label="Usuários bloqueados" value={counts.blocked} detail="Precisam de atenção" tone="red" icon="blocked" />
-        <Metric label="Novos em 30 dias" value={counts.recent} detail="Cadastros recentes" tone="orange" icon="growth" />
+        <Metric label="Novos em 30 dias" value={counts.recent_registrations} detail="Cadastros recentes" tone="orange" icon="growth" />
       </section>
 
       <section className="analytics-main-grid">
@@ -48,10 +53,10 @@ export function AdminDashboardPage() {
 
       <section className="analytics-secondary-grid">
         <article className="admin-panel activity-panel">
-          <header className="analytics-panel-header"><div><span className="admin-section-label">Atividade</span><h2>Acessos recentes</h2><p>Últimas movimentações demonstrativas</p></div></header>
+          <header className="analytics-panel-header"><div><span className="admin-section-label">Atividade</span><h2>Acessos recentes</h2><p>Últimos logins registrados</p></div></header>
           <div className="recent-users">
-            {recentAccess.map((user) => <RecentUser key={user.id} user={user} />)}
-            {!recentAccess.length ? <p className="analytics-empty">Nenhum acesso recente.</p> : null}
+            {dashboard.recent_accesses.map((user) => <RecentUser key={user.id} user={user} />)}
+            {!dashboard.recent_accesses.length ? <p className="analytics-empty">Nenhum acesso recente.</p> : null}
           </div>
         </article>
         <aside className="analytics-side-column">
@@ -64,6 +69,7 @@ export function AdminDashboardPage() {
           <Link className="analytics-manage-link" to="/app/admin/pacientes"><span><small>Acesso rápido</small><strong>Gerenciar pacientes</strong></span><AdminIcon name="users" /></Link>
         </aside>
       </section>
+      </>}
     </AdminShell>
   );
 }
@@ -95,9 +101,9 @@ function RoleChart({ roles, total }: { roles: { role: UserRole; value: number }[
   </div>;
 }
 
-function RecentUser({ user }: { user: AdminUser }) {
+function RecentUser({ user }: { user: AdminDashboard["recent_accesses"][number] }) {
   const path = user.role === "patient" ? "/app/admin/pacientes" : user.role === "nutritionist" ? "/app/admin/nutricionistas" : "/app/admin";
-  return <Link className="recent-user" to={user.role === "admin" ? path : `${path}?q=${encodeURIComponent(user.email)}`}><span className="recent-user-avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabels[user.role]}</small></span><time dateTime={user.lastAccessAt ?? undefined}>{formatRelativeAccess(user.lastAccessAt)}</time></Link>;
+  return <Link className="recent-user" to={user.role === "admin" ? path : `${path}?q=${encodeURIComponent(user.email)}`}><span className="recent-user-avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabels[user.role]}</small></span><time dateTime={user.last_access_at}>{formatRelativeAccess(user.last_access_at)}</time></Link>;
 }
 
 function AnalyticsIcon({ name }: { name: "users" | "active" | "blocked" | "growth" }) {
@@ -108,15 +114,6 @@ function AnalyticsIcon({ name }: { name: "users" | "active" | "blocked" | "growt
     growth: <><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></>,
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
-}
-
-function buildMonthlySeries(users: AdminUser[], reference: Date) {
-  return Array.from({ length: 6 }, (_, index) => {
-    const date = new Date(reference.getFullYear(), reference.getMonth() - (5 - index), 1);
-    const key = `${date.getFullYear()}-${date.getMonth()}`;
-    const value = users.filter((user) => { const created = new Date(user.createdAt); return created.getFullYear() === date.getFullYear() && created.getMonth() === date.getMonth(); }).length;
-    return { key, label: new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(date).replace(".", ""), value };
-  });
 }
 
 function formatRelativeAccess(value: string | null) {

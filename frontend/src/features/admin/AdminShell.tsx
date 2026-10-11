@@ -1,22 +1,14 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/useAuth";
-import { readAdminSettings, type AdminSettings } from "./admin-settings";
 import "./admin.css";
 
 export function AdminShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
-  const fallback = { name: currentUser?.name ?? "Administrador", email: currentUser?.email ?? "", emailNotifications: true };
-  const [account, setAccount] = useState(() => readAdminSettings(fallback));
-  const initials = account.name.split(" ").slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "AD";
-
-  useEffect(() => {
-    function update(event: Event) { setAccount((event as CustomEvent<AdminSettings>).detail); }
-    window.addEventListener("admin-settings-changed", update);
-    return () => window.removeEventListener("admin-settings-changed", update);
-  }, []);
+  const account = { name: currentUser?.name ?? "Administrador" };
+  const initials = account.name.split(" ").slice(0, 2).map(part => part[0]).join("").toUpperCase() || "AD";
 
   async function handleLogout() {
     await logout();

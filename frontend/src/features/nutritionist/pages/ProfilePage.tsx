@@ -1,31 +1,73 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
-import { useDemo } from "../../demo/store";
-import { saveProfessionalProfile } from "../../demo/actions";
+import {
+  getProfessionalProfile,
+  saveProfessionalProfile,
+  type ProfessionalProfile,
+} from "../../care/account-api";
 export function NutritionistProfilePage() {
   const showError = useErrorToast();
-  const { currentUser } = useAuth();
-  const state = useDemo();
-  const [form, setForm] = useState(
-    () =>
-      state.profiles[currentUser!.id] ?? {
-        name: currentUser!.name,
-        crn: "",
-        contact: "",
-        bio: "",
-      },
-  );
+  const { session } = useAuth();
+  const token = session!.accessToken;
+  const [form, setForm] = useState<ProfessionalProfile>({
+    name: "",
+    crn: "",
+    contact: "",
+    bio: "",
+    revision: 1,
+  });
+  const [loadError, setLoadError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  function submit(e: FormEvent) {
+  useEffect(() => {
+    let active = true;
+    setLoadError("");
+    getProfessionalProfile(token)
+      .then((value) => {
+        if (active) {
+          setForm(value);
+          setLoaded(true);
+        }
+      })
+      .catch((error) => {
+        if (active) setLoadError(error.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, retry]);
+  async function submit(e: FormEvent) {
     e.preventDefault();
+    if (!loaded || busy) return;
+    setBusy(true);
+    setMessage("");
     try {
-      saveProfessionalProfile(form, currentUser!);
-      setMessage("Perfil demonstrativo salvo.");
+      setForm(await saveProfessionalProfile(token, form));
+      setMessage("Perfil salvo.");
     } catch (error) {
-      showError(error instanceof Error ? error.message : "Não foi possível salvar neste navegador.");
+      showError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o perfil.",
+      );
+    } finally {
+      setBusy(false);
     }
   }
+  if (!loaded)
+    return (
+      <section className="nutri-card">
+        <p role="status">{loadError || "Carregando perfil..."}</p>
+        {loadError && (
+          <button onClick={() => setRetry((value) => value + 1)}>
+            Tentar novamente
+          </button>
+        )}
+      </section>
+    );
   return (
     <>
       <header className="nutri-heading">
@@ -68,10 +110,12 @@ export function NutritionistProfilePage() {
             />
           </label>
           <p className="nutri-muted">
-            Esta edição é demonstrativa e não altera o e-mail ou a senha usados
-            no login.
+            Os dados profissionais são exibidos separadamente da sua conta de
+            acesso.
           </p>
-          <button className="nutri-primary">Salvar perfil</button>
+          <button className="nutri-primary" disabled={!loaded || busy}>
+            {busy ? "Salvando..." : "Salvar perfil"}
+          </button>
           {message && <p role="status">{message}</p>}
         </form>
       </section>

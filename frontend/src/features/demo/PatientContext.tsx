@@ -2,8 +2,6 @@ import { createContext, useContext } from "react";
 import { useAuth } from "../auth/useAuth";
 import {
   dateLabel,
-  demoUsers,
-  useDemo,
 } from "./store";
 import { usePatientClinical } from "../care/PatientClinicalContext";
 export const PatientContext = createContext<string | null>(null);
@@ -11,7 +9,6 @@ export function usePatientData() {
   const previewId = useContext(PatientContext);
   const { currentUser } = useAuth();
   const clinical = usePatientClinical();
-  const state = useDemo();
   const patientId = previewId ?? currentUser!.id;
   const patient = clinical.patient ?? currentUser!;
   const owner = clinical.patient?.nutritionist_id ?? undefined;
@@ -83,7 +80,6 @@ export function usePatientData() {
       : null,
   };
   return {
-    state,
     patientId,
     patient,
     nutritionist,

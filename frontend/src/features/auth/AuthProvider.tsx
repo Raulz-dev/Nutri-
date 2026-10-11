@@ -1,19 +1,21 @@
-import { registerActor } from "../demo/store";
 import {
   createContext,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-
 import { getCurrentUser } from "../users/api";
 import type { User } from "../users/types";
 import { loginRequest, logoutRequest } from "./api";
+import {
+  clearAccessToken,
+  refreshAccess,
+  setAccessToken,
+} from "../../lib/http-client";
 import type { AuthSession, LoginCredentials } from "./types";
-
-const SESSION_KEY = "mais-saude-session";
 
 type AuthContextValue = {
   session: AuthSession | null;
@@ -22,99 +24,64 @@ type AuthContextValue = {
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<User>;
   logout: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 };
-
 export const AuthContext = createContext<AuthContextValue | null>(null);
-
-function readSession(): AuthSession | null {
-  const value = sessionStorage.getItem(SESSION_KEY);
-  if (!value) return null;
-
-  try {
-    return JSON.parse(value) as AuthSession;
-  } catch {
-    sessionStorage.removeItem(SESSION_KEY);
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession | null>(readSession);
+  const epoch = useRef(0);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(Boolean(session));
-
+  const [isLoading, setIsLoading] = useState(true);
+  const forget = useCallback(() => {
+    epoch.current += 1;
+    clearAccessToken();
+    setSession(null);
+    setCurrentUser(null);
+  }, []);
   useEffect(() => {
-    if (!session) {
-      setCurrentUser(null);
-      setIsLoading(false);
-      return;
-    }
-    if (currentUser) {
-      setIsLoading(false);
-      return;
-    }
-
+    sessionStorage.removeItem("mais-saude-session");
     let active = true;
-    setIsLoading(true);
-    getCurrentUser(session.accessToken)
-      .then((user) => {
-        if (active) {
+    const started = epoch.current;
+    refreshAccess()
+      .then(async (token) => {
+        const user = await getCurrentUser(token);
+        if (active && started === epoch.current) {
+          setSession({ accessToken: token });
           setCurrentUser(user);
-          try {
-            registerActor(user);
-          } catch {
-          }
         }
       })
       .catch(() => {
-        if (!active) return;
-        sessionStorage.removeItem(SESSION_KEY);
-        setSession(null);
-        setCurrentUser(null);
+        if (active && started === epoch.current) forget();
       })
       .finally(() => {
         if (active) setIsLoading(false);
       });
-
+    window.addEventListener("nutri-session-ended", forget);
     return () => {
       active = false;
+      window.removeEventListener("nutri-session-ended", forget);
     };
-  }, [session]);
-
+  }, [forget]);
   const login = useCallback(async (credentials: LoginCredentials) => {
+    epoch.current += 1;
+    clearAccessToken();
     const tokens = await loginRequest(credentials);
-    const newSession = {
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-    };
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(newSession));
-    try {
-      const user = await getCurrentUser(newSession.accessToken);
-      setCurrentUser(user);
-      setSession(newSession);
-      try {
-        registerActor(user);
-      } catch {
-      }
-      return user;
-    } catch (error) {
-      sessionStorage.removeItem(SESSION_KEY);
-      setSession(null);
-      throw error;
-    }
+    setAccessToken(tokens.access_token);
+    const user = await getCurrentUser(tokens.access_token);
+    setCurrentUser(user);
+    setSession({ accessToken: tokens.access_token });
+    return user;
   }, []);
-
   const logout = useCallback(async () => {
-    const currentSession = readSession();
     try {
-      if (currentSession) await logoutRequest(currentSession.refreshToken);
+      await logoutRequest();
     } finally {
-      sessionStorage.removeItem(SESSION_KEY);
-      setSession(null);
-      setCurrentUser(null);
+      forget();
     }
-  }, []);
-
+  }, [forget]);
+  const reloadUser = useCallback(async () => {
+    if (session) setCurrentUser(await getCurrentUser(session.accessToken));
+  }, [session]);
   const value = useMemo(
     () => ({
       session,
@@ -123,9 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       login,
       logout,
+      reloadUser,
     }),
-    [session, currentUser, isLoading, login, logout],
+    [session, currentUser, isLoading, login, logout, reloadUser],
   );
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -12,6 +12,7 @@ const items: { path: string; label: string; icon: IconName }[] = [
   { path: "/pacientes", label: "Meus pacientes", icon: "user" },
   { path: "/consultas", label: "Consultas", icon: "calendar" },
   { path: "/mensagens", label: "Mensagens", icon: "message" },
+  { path: "/suporte", label: "Suporte", icon: "message" },
   { path: "/perfil", label: "Meu perfil", icon: "user" },
 ];
 export function NutritionistLayout() {

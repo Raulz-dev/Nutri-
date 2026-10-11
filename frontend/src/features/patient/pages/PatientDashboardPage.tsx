@@ -44,13 +44,11 @@ export function PatientDashboardPage() {
 }
 
 function PatientDashboardContent() {
-  const { view: patientData, patientId, state } = usePatientData();
+  const { view: patientData } = usePatientData();
   const clinical = usePatientClinical();
   const { patientId: previewId } = useParams();
   const basePath = previewId ? `/app/nutricionista/pacientes/${previewId}/previa` : "/app/paciente";
   const menu = navigation.map(item => ({ ...item, path: item.path.replace("/app/paciente", basePath) }));
-  const conversationId = state.links.find(l => l.patientId === patientId)?.conversationId;
-  const unread = state.conversations.find(c => c.id === conversationId)?.messages.filter(m => m.sender === "nutritionist" && !m.read).length ?? 0;
   const { section: sectionSlug } = useParams<{ section?: string }>();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -90,7 +88,6 @@ function PatientDashboardContent() {
             >
               <PatientIcon name={item.icon} />
               <span>{item.label}</span>
-              {item.id === "messages" && unread > 0 ? <b>{unread}</b> : null}
             </button>
           ))}
         </nav>

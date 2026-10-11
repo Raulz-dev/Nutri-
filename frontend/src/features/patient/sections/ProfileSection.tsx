@@ -1,8 +1,10 @@
 import { PanelHeader } from "../components/PanelHeader";
 import { usePatientData } from "../../demo/PatientContext";
+import { usePatientClinical } from "../../care/PatientClinicalContext";
 
 export function ProfileSection() {
   const { view: patientData, owner } = usePatientData();
+  const clinical = usePatientClinical();
   return (
     <article className="patient-panel section-panel">
       <PanelHeader eyebrow="Seus dados" title="Perfil do paciente" />
@@ -18,7 +20,7 @@ export function ProfileSection() {
         <div><dt>Nome completo</dt><dd>{patientData.fullName}</dd></div>
         <div><dt>E-mail</dt><dd>{patientData.email}</dd></div>
         <div><dt>Nutricionista responsável</dt><dd>{patientData.nutritionist}</dd></div>
-        <div><dt>Próxima consulta</dt><dd>{patientData.appointment ? `${patientData.appointment.date}, ${patientData.appointment.time}` : "Nenhuma consulta agendada"}</dd></div>
+        <div><dt>Próxima consulta</dt><dd>{clinical.appointmentLoading ? "Carregando..." : clinical.appointmentError ? "Indisponível" : patientData.appointment ? `${patientData.appointment.date}, ${patientData.appointment.time}` : "Nenhuma consulta agendada"}</dd></div>
       </dl>
     </article>
   );

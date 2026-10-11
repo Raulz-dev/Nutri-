@@ -1,89 +1,52 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
-import { activePlan, dateLabel, demoUsers, useDemo } from "../../demo/store";
+import { listPatients } from "../../care/api";
+import { listAllConversations, listAppointments, type AppointmentRecord } from "../../care/interaction-api";
+import { dateLabel } from "../../demo/store";
+
 export function NutritionistDashboardPage() {
-  const { currentUser } = useAuth();
-  const state = useDemo();
-  const links = state.links.filter((l) => l.nutritionistId === currentUser!.id);
-  const patients = demoUsers(state).filter((u) =>
-    links.some((l) => l.patientId === u.id),
-  );
-  const pending = patients.filter((p) => !activePlan(state, p.id));
-  const appointments = state.appointments
-    .filter(
-      (a) =>
-        a.authorId === currentUser!.id &&
-        links.some((l) => l.patientId === a.patientId) &&
-        a.status === "scheduled" &&
-        new Date(`${a.date}T${a.time}`).getTime() >= Date.now(),
-    )
-    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
-  const unread = state.conversations
-    .filter((c) => links.some((l) => l.conversationId === c.id))
-    .flatMap((c) => c.messages)
-    .filter((m) => m.sender === "patient" && !m.read).length;
-  return (
-    <>
-      <header className="nutri-heading">
-        <span>SEU CONSULTÓRIO</span>
-        <h1>Visão geral</h1>
-        <p>Organize o cuidado e acompanhe quem precisa de você.</p>
-      </header>
-      <div className="nutri-metrics">
-        {[
-          ["Pacientes vinculados", patients.length],
-          ["Planos ativos", patients.length - pending.length],
-          ["Próximas consultas", appointments.length],
-          ["Mensagens não lidas", unread],
-        ].map(([label, value]) => (
-          <article key={label}>
-            <small>{label}</small>
-            <strong>{value}</strong>
-          </article>
-        ))}
-      </div>
-      <div className="nutri-columns">
-        <section className="nutri-card">
-          <header>
-            <h2>Precisam de um plano</h2>
-            <Link to="/app/nutricionista/pacientes">Ver pacientes</Link>
-          </header>
-          <p className="nutri-muted">Pacientes sem plano alimentar ativo.</p>
-          {pending.length ? (
-            pending.map((p) => (
-              <div className="nutri-list-row" key={p.id}>
-                <Link to={`pacientes/${p.id}`}>{p.name}</Link>
-                <Link to={`mensagens?paciente=${p.id}`}>Conversar →</Link>
-              </div>
-            ))
-          ) : (
-            <p className="nutri-empty">Nenhum paciente com plano pendente.</p>
-          )}
-        </section>
-        <section className="nutri-card">
-          <header>
-            <h2>Próximas consultas</h2>
-            <Link to="/app/nutricionista/consultas">Ver agenda</Link>
-          </header>
-          {appointments.slice(0, 5).map((a) => (
-            <Link
-              className="nutri-list-row"
-              key={a.id}
-              to={`pacientes/${a.patientId}`}
-            >
-              <strong>
-                {patients.find((p) => p.id === a.patientId)?.name}
-              </strong>
-              <span>
-                {dateLabel(a.date)} · {a.time}
-              </span>
-            </Link>
-          ))}
-          {!appointments.length && (
-            <p className="nutri-empty">Nenhuma consulta agendada.</p>
-          )}
-        </section>
-      </div>
-    </>
-  );
+  const { session } = useAuth();
+  const token = session?.accessToken ?? "";
+  const [patientTotal, setPatientTotal] = useState<number | null>(null);
+  const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
+  const [appointmentTotal, setAppointmentTotal] = useState<number | null>(null);
+  const [unread, setUnread] = useState<number | null>(null);
+  const [error, setError] = useState("");
+
+  const refresh = useCallback(async () => {
+    const [patients, scheduled, conversations] = await Promise.all([
+      listPatients(token),
+      listAppointments(token, 0, { upcoming: true, limit: 5 }),
+      listAllConversations(token),
+    ]);
+    const upcoming = [...scheduled.items].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+    setPatientTotal(patients.total);
+    setAppointments(upcoming.slice(0, 5));
+    setAppointmentTotal(scheduled.total);
+    setUnread(conversations.reduce((total, conversation) => total + conversation.unread, 0));
+  }, [token]);
+
+  useEffect(() => {
+    let active = true;
+    void refresh().catch(reason => { if (active) setError(reason instanceof Error ? reason.message : "Não foi possível carregar o painel."); });
+    return () => { active = false; };
+  }, [refresh]);
+
+  return <>
+    <header className="nutri-heading"><span>SEU CONSULTÓRIO</span><h1>Visão geral</h1><p>Organize o cuidado e acompanhe quem precisa de você.</p></header>
+    <ErrorToast message={error} />
+    {error && <button type="button" onClick={() => { setError(""); void refresh().catch(reason => setError(reason instanceof Error ? reason.message : "Não foi possível carregar o painel.")); }}>Tentar novamente</button>}
+    <div className="nutri-metrics">
+      {[["Pacientes vinculados", patientTotal ?? "—"], ["Próximas consultas", appointmentTotal ?? "—"], ["Mensagens não lidas", unread ?? "—"]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}
+    </div>
+    <div className="nutri-columns">
+      <section className="nutri-card"><header><h2>Planos alimentares</h2><Link to="/app/nutricionista/pacientes">Ver pacientes</Link></header><p className="nutri-muted">Consulte e gerencie o plano de cada paciente em Meus pacientes.</p></section>
+      <section className="nutri-card"><header><h2>Próximas consultas</h2><Link to="/app/nutricionista/consultas">Ver agenda</Link></header>
+        {appointments.map(item => <Link className="nutri-list-row" key={item.id} to={`/app/nutricionista/pacientes/${item.patientId}`}><strong>{item.patientName}</strong><span>{dateLabel(item.date)} · {item.time}</span></Link>)}
+        {!appointments.length && <p className="nutri-empty">Nenhuma consulta agendada.</p>}
+      </section>
+    </div>
+  </>;
 }

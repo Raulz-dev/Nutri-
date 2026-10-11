@@ -1,10 +1,8 @@
 import { createContext, useContext } from "react";
 import { useAuth } from "../auth/useAuth";
 import {
-  activePlan,
   dateLabel,
   demoUsers,
-  nextAppointment,
   useDemo,
 } from "./store";
 import { usePatientClinical } from "../care/PatientClinicalContext";
@@ -18,8 +16,8 @@ export function usePatientData() {
   const patient = clinical.patient ?? currentUser!;
   const owner = clinical.patient?.nutritionist_id ?? undefined;
   const nutritionist = clinical.patient?.nutritionist_name ?? "Sem nutricionista";
-  const plan = activePlan(state, patientId);
-  const appointment = nextAppointment(state, patientId);
+  const plan = clinical.mealPlan;
+  const appointment = clinical.nextAppointment;
   const history = clinical.measurements;
   const latest = history.at(-1);
   const first = clinical.firstMeasurement;
@@ -28,7 +26,6 @@ export function usePatientData() {
     .sort((a, b) => a.time.localeCompare(b.time))
     .map((m) => ({
       ...m,
-      done: m.done ?? false,
       foods: m.foods.map((f) => `${f.name} — ${fmt(f.grams)} g`),
       substitutions: m.substitutions.map((s) => ({
         id: s.id,

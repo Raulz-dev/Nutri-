@@ -1,51 +1,54 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../../auth/useAuth";
-import { useDemo, demoUsers, today } from "../../demo/store";
-import { saveAppointment } from "../../demo/actions";
-import type { Appointment } from "../../demo/types";
+import { today } from "../../demo/store";
+import type { PatientRow } from "../../care/api";
+import { createAppointment, updateAppointment, type AppointmentRecord } from "../../care/interaction-api";
 import { Modal } from "./Modal";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 export function AppointmentForm({
   source,
   defaultPatient,
+  patients,
   onClose,
+  onSaved,
 }: {
-  source?: Appointment;
+  source?: AppointmentRecord;
   defaultPatient: string;
+  patients: PatientRow[];
   onClose: () => void;
+  onSaved: () => void;
 }) {
-  const { currentUser } = useAuth();
-  const state = useDemo();
-  const patients = demoUsers(state).filter((p) =>
-    state.links.some(
-      (l) => l.patientId === p.id && l.nutritionistId === currentUser!.id,
-    ),
-  );
-  const [form, setForm] = useState<Appointment>(() =>
+  const { currentUser, session } = useAuth();
+  const [form, setForm] = useState<AppointmentRecord>(() =>
     source
       ? { ...source }
       : {
           id: crypto.randomUUID(),
           patientId: defaultPatient,
+          patientName: patients.find(patient => patient.id === defaultPatient)?.name ?? "",
+          nutritionistId: currentUser!.id,
           authorId: currentUser!.id,
-          authorName: currentUser!.name,
           date: today(),
           time: "09:00",
           format: "Presencial",
           location: "",
           guidance: "",
           status: "scheduled",
+          revision: 1,
         },
   );
   const [error, setError] = useState("");
-  function submit(e: FormEvent) {
+  const [busy, setBusy] = useState(false);
+  async function submit(e: FormEvent) {
     e.preventDefault();
+    setBusy(true);
     try {
-      saveAppointment(form, currentUser!);
-      onClose();
-    } catch (e) {
-      setError((e as Error).message);
-    }
+      if (source) await updateAppointment(session!.accessToken, form);
+      else await createAppointment(session!.accessToken, form);
+      onSaved();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Não foi possível salvar a consulta.");
+    } finally { setBusy(false); }
   }
   return (
     <Modal
@@ -58,6 +61,7 @@ export function AppointmentForm({
           <select
             value={form.patientId}
             required
+            disabled={Boolean(source) || busy}
             onChange={(e) => setForm({ ...form, patientId: e.target.value })}
           >
             {patients.map((p) => (
@@ -94,7 +98,7 @@ export function AppointmentForm({
             onChange={(e) =>
               setForm({
                 ...form,
-                format: e.target.value as Appointment["format"],
+                format: e.target.value as AppointmentRecord["format"],
               })
             }
           >
@@ -123,7 +127,7 @@ export function AppointmentForm({
           <button type="button" onClick={onClose}>
             Voltar
           </button>
-          <button className="nutri-primary">Salvar consulta</button>
+          <button className="nutri-primary" disabled={busy || source?.status !== undefined && source.status !== "scheduled"}>Salvar consulta</button>
         </div>
       </form>
     </Modal>

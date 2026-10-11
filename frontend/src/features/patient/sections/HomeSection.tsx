@@ -6,12 +6,16 @@ import type { PatientSection } from "../mocks/patient-data";
 import { initials } from "../../demo/store";
 import { EvolutionChart } from "../../demo/EvolutionChart";
 import { usePatientData } from "../../demo/PatientContext";
+import { usePatientClinical } from "../../care/PatientClinicalContext";
 
 export function HomeSection({ onNavigate }: { onNavigate: (section: PatientSection) => void }) {
   const { view: patientData, history } = usePatientData();
+  const clinical = usePatientClinical();
   const [showAppointment, setShowAppointment] = useState(false);
   const appointmentDialog = useRef<HTMLElement>(null);
   const nextMeal = getNextMeal(patientData.meals);
+  const planUnavailable = clinical.planLoading || Boolean(clinical.planError);
+  const planStatus = clinical.planLoading ? "Carregando..." : "Indisponível";
   useModalBehavior(appointmentDialog, () => setShowAppointment(false), showAppointment);
 
   return (
@@ -19,9 +23,9 @@ export function HomeSection({ onNavigate }: { onNavigate: (section: PatientSecti
       <section className="health-summary-grid" aria-label="Resumo de saúde">
         <Summary icon="chart" label="Peso atual" value={patientData.currentWeight} detail={patientData.weightChange} />
         <Summary icon="percent" label="Percentual de gordura" value={patientData.bodyFat} detail={patientData.bodyFatChange} />
-        <Summary icon="clock" label="Próxima refeição" value={nextMeal?.title ?? "Sem plano"} detail={nextMeal ? `${nextMeal.time}${nextMeal.isTomorrow ? " · amanhã" : ""}` : "Nenhuma refeição publicada"} />
-        <Summary icon="water" label="Água diária" value={patientData.mealPlan.dailyWaterGoal} detail="Meta diária do plano" />
-        <Summary icon="target" label="Calorias diárias" value={patientData.dailyCalories} detail="Total estimado do plano" />
+        <Summary icon="clock" label="Próxima refeição" value={planUnavailable ? planStatus : nextMeal?.title ?? "Sem plano"} detail={planUnavailable ? "Consulte o plano alimentar" : nextMeal ? `${nextMeal.time}${nextMeal.isTomorrow ? " · amanhã" : ""}` : "Nenhuma refeição publicada"} />
+        <Summary icon="water" label="Água diária" value={planUnavailable ? planStatus : patientData.mealPlan.dailyWaterGoal} detail="Meta diária do plano" />
+        <Summary icon="target" label="Calorias diárias" value={planUnavailable ? planStatus : patientData.dailyCalories} detail="Total estimado do plano" />
       </section>
 
       <section className="dashboard-insights">
@@ -30,7 +34,9 @@ export function HomeSection({ onNavigate }: { onNavigate: (section: PatientSecti
           <button className="chart-details-button" type="button" onClick={() => onNavigate("progress")}>Ver detalhes <PatientIcon name="arrow" /></button>
         </div>
 
-        {patientData.appointment ? <article className="next-appointment-card">
+        {clinical.appointmentLoading ? <article className="next-appointment-card"><h2>Carregando consulta...</h2></article>
+        : clinical.appointmentError ? <article className="next-appointment-card"><h2>Consulta indisponível</h2><button type="button" onClick={() => { void clinical.reloadNextAppointment(); }}>Tentar novamente</button></article>
+        : patientData.appointment ? <article className="next-appointment-card">
           <div className="appointment-icon"><PatientIcon name="calendar" /></div>
           <span className="appointment-eyebrow">Próxima consulta</span>
           <h2>{patientData.appointment.date.replace(/ de \d{4}$/, "")}</h2>

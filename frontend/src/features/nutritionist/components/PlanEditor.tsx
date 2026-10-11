@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Food, Meal, Plan } from "../../demo/types";
-import { savePlan } from "../../demo/actions";
 import { useAuth } from "../../auth/useAuth";
 import { today } from "../../demo/store";
+import { createMealPlan, publishMealPlan, updateMealPlan, type MealPlanRecord } from "../../care/meal-plan-api";
+import { validatePlan } from "../../care/plan-validation";
 import { Modal } from "./Modal";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 const newFood = (): Food => ({ id: crypto.randomUUID(), name: "", grams: 100 });
@@ -21,12 +22,20 @@ export function PlanEditor({
   patientId,
   source,
   onClose,
+  onSaved,
 }: {
   patientId: string;
   source?: Plan;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
-  const { currentUser } = useAuth();
+  const { currentUser, session } = useAuth();
+  const formRef = useRef<HTMLFormElement>(null);
+  const savingRef = useRef(false);
+  const [savedDraft, setSavedDraft] = useState<MealPlanRecord | null>(
+    source?.status === "draft" && "revision" in source ? source as MealPlanRecord : null,
+  );
+  const [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState<Plan>(() =>
     source
       ? {
@@ -62,24 +71,40 @@ export function PlanEditor({
       meals: p.meals.map((m) => (m.id === id ? { ...m, ...change } : m)),
     }));
   }
-  function save(publish: boolean) {
+  async function save(publish: boolean) {
+    if (savingRef.current || !formRef.current?.reportValidity()) return;
+    let draftSaved = false;
     try {
-      savePlan(plan, currentUser!, publish);
+      validatePlan(plan);
+      savingRef.current = true;
+      setBusy(true);
+      const token = session?.accessToken ?? "";
+      const draft = savedDraft
+        ? await updateMealPlan(token, patientId, { ...plan, id: savedDraft.id }, savedDraft.revision)
+        : await createMealPlan(token, patientId, plan);
+      setSavedDraft(draft);
+      setPlan(current => ({ ...current, id: draft.id, createdAt: draft.createdAt }));
+      draftSaved = true;
+      onSaved?.();
+      if (publish) await publishMealPlan(token, patientId, draft.id, draft.revision);
+      if (publish) onSaved?.();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
-    }
+      const message = e instanceof Error ? e.message : "Não foi possível salvar o plano.";
+      setError(draftSaved && publish ? `Rascunho salvo, mas não foi possível publicar. ${message}` : message);
+    } finally { savingRef.current = false; setBusy(false); }
   }
   return (
     <Modal
       title={
-        source?.status === "published"
+        source && source.status !== "draft"
           ? "Nova versão do plano"
           : "Editar plano alimentar"
       }
-      onClose={onClose}
+      onClose={() => { if (!busy) onClose(); }}
     >
       <form
+        ref={formRef}
         className="nutri-form"
         onSubmit={(e) => {
           e.preventDefault();
@@ -254,15 +279,16 @@ export function PlanEditor({
           Adicionar refeição
         </button>
         <p className="nutri-muted">
-          Os valores nutricionais são preenchidos manualmente. Publicar
-          substitui o plano ativo e mantém o histórico.
+          Os valores nutricionais são preenchidos manualmente. Um plano publicado
+          para uma data futura passa a valer apenas no início da vigência.
         </p>
         <ErrorToast message={error} />
         <div className="nutri-actions">
-          <button type="submit">Salvar rascunho</button>
+          <button type="submit" disabled={busy}>{busy ? "Salvando..." : "Salvar rascunho"}</button>
           <button
             type="button"
             className="nutri-primary"
+            disabled={busy}
             onClick={() => save(true)}
           >
             Publicar plano

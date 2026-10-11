@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { initials } from "../../demo/store";
 import {
@@ -16,7 +16,6 @@ const items: { path: string; label: string; icon: IconName }[] = [
 ];
 export function NutritionistLayout() {
   const { currentUser, logout } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
   const name = currentUser!.name;
   return (
@@ -61,9 +60,7 @@ export function NutritionistLayout() {
       </aside>
       <main className="nutri-main">
         <div className="nutri-demo-label">
-          {location.pathname.startsWith("/app/nutricionista/pacientes")
-            ? "Pacientes vinculados · dados salvos na plataforma"
-            : "Demonstração · alterações salvas neste navegador"}
+          Dados salvos na plataforma
         </div>
         <Outlet />
       </main>

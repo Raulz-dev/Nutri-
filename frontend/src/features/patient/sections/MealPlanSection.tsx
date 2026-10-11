@@ -4,9 +4,11 @@ import { useRef, useState } from "react";
 import { PanelHeader } from "../components/PanelHeader";
 import { PatientIcon } from "../components/PatientIcon";
 import { usePatientData } from "../../demo/PatientContext";
+import { usePatientClinical } from "../../care/PatientClinicalContext";
 
 export function MealPlanSection() {
   const { view: patientData } = usePatientData();
+  const clinical = usePatientClinical();
   const [selectedMeal, setSelectedMeal] = useState<(typeof patientData.meals)[number] | null>(null);
   const [showSubstitutions, setShowSubstitutions] = useState(false);
   const mealDialog = useRef<HTMLElement>(null);
@@ -29,6 +31,8 @@ export function MealPlanSection() {
     setSelectedMeal(null);
   }
 
+  if (clinical.planLoading) return <article className="patient-panel section-panel"><h2>Carregando plano alimentar...</h2></article>;
+  if (clinical.planError) return <article className="patient-panel section-panel"><h2>Não foi possível carregar o plano alimentar</h2><button type="button" onClick={() => { void clinical.reloadMealPlan(); }}>Tentar novamente</button></article>;
   if (!patientData.meals.length) return <article className="patient-panel section-panel"><h2>Nenhum plano alimentar ativo</h2><p>Seu plano aparecerá aqui após a publicação pelo nutricionista.</p></article>;
 
   return (
@@ -63,7 +67,6 @@ export function MealPlanSection() {
                   <strong>{meal.title}</strong>
                   <small>{meal.foods.length} itens</small>
                 </span>
-                <span className={meal.done ? "meal-status done" : "meal-status"}>{meal.done ? "Concluída" : "Pendente"}</span>
                 <span className="meal-open" aria-hidden="true">Ver refeição <PatientIcon name="arrow" /></span>
               </button>
             ))}

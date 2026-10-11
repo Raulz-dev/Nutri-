@@ -1,13 +1,16 @@
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.care.interaction_models import AppointmentModel
 from app.care.models import CareAssignmentModel, CareLinkInvitationModel
+from app.care.plan_models import MealPlanModel
 from app.care.policies import audit, lock_users, require_admin, utcnow
 from app.database.session import get_db
 from app.users.domain.enums import UserRole, UserStatus
@@ -53,6 +56,42 @@ async def current_assignment(db: AsyncSession, patient_id: UUID, lock=False):
     if lock:
         query = query.with_for_update()
     return await db.scalar(query)
+
+
+async def require_no_current_or_upcoming_plan(db: AsyncSession, patient_id: UUID):
+    today = datetime.now(ZoneInfo("America/Fortaleza")).date()
+    plan = await db.scalar(
+        select(MealPlanModel.id)
+        .where(
+            MealPlanModel.patient_id == patient_id,
+            MealPlanModel.status == "published",
+            MealPlanModel.effective_end_on >= today,
+        )
+        .limit(1)
+    )
+    if plan:
+        raise UserConflictError(
+            "Encerre o plano alimentar vigente ou futuro antes de alterar o vínculo."
+        )
+
+
+async def require_no_upcoming_appointments(db: AsyncSession, patient_id: UUID):
+    now = datetime.now(ZoneInfo("America/Fortaleza"))
+    appointment = await db.scalar(
+        select(AppointmentModel.id)
+        .where(
+            AppointmentModel.patient_id == patient_id,
+            AppointmentModel.status == "scheduled",
+            or_(
+                AppointmentModel.appointment_on > now.date(),
+                (AppointmentModel.appointment_on == now.date())
+                & (AppointmentModel.appointment_at >= now.time().replace(tzinfo=None)),
+            ),
+        )
+        .limit(1)
+    )
+    if appointment:
+        raise UserConflictError("Cancele as consultas futuras antes de alterar o vínculo.")
 
 
 async def require_patient_access(db: AsyncSession, actor: User, patient_id: UUID):
@@ -178,6 +217,9 @@ async def assign(
             patient_id=patient_id, nutritionist_id=nutritionist.id, started_at=current.started_at
         )
     if current:
+        await require_no_current_or_upcoming_plan(db, patient_id)
+        await require_no_upcoming_appointments(db, patient_id)
+    if current:
         current.ended_at = utcnow()
         await db.flush()
     link = CareAssignmentModel(
@@ -220,5 +262,7 @@ async def unassign(
     current = await current_assignment(db, patient_id, lock=True)
     if current is None:
         raise HTTPException(404, "Vínculo não encontrado.")
+    await require_no_current_or_upcoming_plan(db, patient_id)
+    await require_no_upcoming_appointments(db, patient_id)
     current.ended_at = utcnow()
     audit(db, "unassign", "care_assignment", current.id, patient_id=str(patient_id))

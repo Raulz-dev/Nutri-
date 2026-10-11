@@ -3,8 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.care.audit_router import router as audit_router
 from app.care.clinical_router import router as clinical_router
+from app.care.interaction_router import router as interaction_router
 from app.care.invites import router as invites_router
 from app.care.link_invitations import router as link_invitations_router
+from app.care.plan_router import router as plan_router
 from app.care.router import router as care_router
 from app.config.settings import get_settings
 from app.operations import configure_operations
@@ -27,6 +29,8 @@ api_v1.include_router(users_router)
 api_v1.include_router(auth_router)
 api_v1.include_router(care_router)
 api_v1.include_router(clinical_router)
+api_v1.include_router(plan_router)
+api_v1.include_router(interaction_router)
 api_v1.include_router(invites_router)
 api_v1.include_router(link_invitations_router)
 api_v1.include_router(audit_router)

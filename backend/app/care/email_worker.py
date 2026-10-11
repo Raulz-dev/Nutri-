@@ -18,7 +18,9 @@ from app.care.models import EmailOutboxModel, InvitationModel
 from app.care.policies import utcnow
 from app.config.settings import Settings, get_settings
 from app.database.session import AsyncSessionLocal
+from app.users.domain.enums import UserStatus
 from app.users.infrastructure.email import SMTPPasswordResetSender
+from app.users.infrastructure.models import PasswordResetTokenModel, UserModel
 
 logger = logging.getLogger("nutri.outbox")
 WELCOME_IMAGE = Path(__file__).with_name("assets") / "welcome.jpg"
@@ -70,8 +72,21 @@ async def deliver_one() -> bool:
         )
         if not row:
             return False
-        invitation = await db.get(InvitationModel, row.invitation_id)
+        invitation = (
+            await db.get(InvitationModel, row.invitation_id)
+            if row.invitation_id
+            else await db.get(PasswordResetTokenModel, row.password_reset_id)
+        )
         if not invitation or invitation.used_at or invitation.expires_at <= utcnow():
+            row.payload = None
+            row.failed_at = utcnow()
+            return True
+        recipient_user = await db.get(UserModel, invitation.user_id)
+        if (
+            not recipient_user
+            or recipient_user.deactivated_at
+            or (row.password_reset_id and recipient_user.status != UserStatus.ACTIVE)
+        ):
             row.payload = None
             row.failed_at = utcnow()
             return True
@@ -83,9 +98,21 @@ async def deliver_one() -> bool:
             logger.error("outbox_payload_invalid invitation_id=%s", row.invitation_id)
             return True
         settings = get_settings()
-        message = invitation_message(
-            values["recipient"], values["token"], row.invitation_id, settings
-        )
+        if row.invitation_id:
+            message = invitation_message(
+                values["recipient"], values["token"], row.invitation_id, settings
+            )
+        else:
+            message = EmailMessage()
+            message["Subject"] = "Redefinição de senha do Nutri +"
+            message["From"] = settings.smtp_from_email
+            message["To"] = values["recipient"]
+            message["Message-ID"] = f"<{row.password_reset_id}@nutri-reset>"
+            link = settings.password_reset_url + "?" + urlencode({"token": values["token"]})
+            message.set_content(
+                f"Use o link para redefinir sua senha:\n\n{link}\n\n"
+                "Se não solicitou, ignore esta mensagem."
+            )
         sender = SMTPPasswordResetSender(
             settings.smtp_host,
             settings.smtp_port,

@@ -3,8 +3,10 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.care.policies import utcnow
 from app.config.settings import Settings, get_settings
 from app.database.session import get_db
 from app.operations import actor_id
@@ -22,7 +24,8 @@ from app.users.application.refresh_access import RefreshAccess
 from app.users.application.update_user import UpdateUser
 from app.users.domain.enums import UserStatus
 from app.users.domain.user import User
-from app.users.infrastructure.email import SMTPPasswordResetSender
+from app.users.infrastructure.email import QueuedPasswordResetSender
+from app.users.infrastructure.models import RefreshSessionModel
 from app.users.infrastructure.repository import (
     SQLAlchemyPasswordResetRepository,
     SQLAlchemyRefreshSessionRepository,
@@ -68,6 +71,7 @@ async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     repository: Annotated[SQLAlchemyUserRepository, Depends(get_user_repository)],
     jwt_service: Annotated[JWTService, Depends(get_jwt_service)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
 ) -> User:
     unauthorized = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -92,6 +96,18 @@ async def get_current_user(
     if (
         user.credentials_changed_at
         and payload.get("iat", 0) < user.credentials_changed_at.timestamp()
+    ):
+        raise unauthorized
+    family = payload.get("sid")
+    if not isinstance(family, str) or not await db.scalar(
+        select(RefreshSessionModel.id)
+        .where(
+            RefreshSessionModel.family_id == family,
+            RefreshSessionModel.user_id == user.id,
+            RefreshSessionModel.revoked_at.is_(None),
+            RefreshSessionModel.expires_at > utcnow(),
+        )
+        .limit(1)
     ):
         raise unauthorized
     actor_id.set(user.id)
@@ -186,20 +202,12 @@ def get_request_password_reset(
     user_repository: Annotated[SQLAlchemyUserRepository, Depends(get_user_repository)],
     reset_repository: Annotated[SQLAlchemyPasswordResetRepository, Depends(get_reset_repository)],
     settings: Annotated[Settings, Depends(get_settings)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
 ) -> RequestPasswordReset:
-    sender = SMTPPasswordResetSender(
-        host=settings.smtp_host,
-        port=settings.smtp_port,
-        from_email=settings.smtp_from_email,
-        reset_url=settings.password_reset_url,
-        username=settings.smtp_username,
-        password=settings.smtp_password,
-        starttls=settings.smtp_starttls,
-    )
     return RequestPasswordReset(
         user_repository,
         reset_repository,
-        sender,
+        QueuedPasswordResetSender(db, settings.outbox_encryption_key),
         settings.password_reset_expiration_minutes,
     )
 

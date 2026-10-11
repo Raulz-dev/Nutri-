@@ -38,6 +38,6 @@ class LoginUser:
             expires_at=datetime.now(UTC) + timedelta(days=self._refresh_expiration_days),
         )
         return AuthTokens(
-            access_token=self._jwt_service.create_access_token(user.id),
+            access_token=self._jwt_service.create_access_token(user.id, hash_token(refresh_token)),
             refresh_token=refresh_token,
         )

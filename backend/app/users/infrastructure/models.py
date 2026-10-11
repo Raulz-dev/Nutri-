@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid7
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Index, String, Text, func, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, IdMixin, TimestampMixin
@@ -11,6 +11,9 @@ from app.users.domain.enums import UserRole, UserStatus
 
 class UserModel(Base, IdMixin, TimestampMixin):
     __tablename__ = "users"
+    email_notifications: Mapped[bool] = mapped_column(
+        Boolean, server_default=true(), nullable=False
+    )
     deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     credentials_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -44,6 +47,9 @@ class RefreshSessionModel(Base, IdMixin):
 
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    family_id: Mapped[str] = mapped_column(
+        String(64), default=lambda: uuid7().hex, index=True, nullable=False
     )
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

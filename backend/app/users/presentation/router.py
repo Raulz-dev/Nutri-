@@ -144,6 +144,8 @@ async def update_user(
     current_user: Annotated[User, Depends(get_current_user)],
     use_case: Annotated[UpdateUser, Depends(get_update_user)],
 ) -> UserResponse:
+    if current_user.id == user_id and data.email is not None and data.email != current_user.email:
+        raise HTTPException(403, "Altere o e-mail nas configurações, confirmando sua senha atual.")
     try:
         updated = await use_case.execute(
             current_user,

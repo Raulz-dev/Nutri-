@@ -8,4 +8,6 @@ engine: AsyncEngine = create_async_engine(
     settings.database_url,
     echo=settings.sql_echo,
     pool_pre_ping=True,
+    pool_timeout=10,
+    connect_args={"connect_timeout": 5},
 )

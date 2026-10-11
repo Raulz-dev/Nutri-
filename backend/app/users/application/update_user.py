@@ -56,6 +56,6 @@ class UpdateUser:
             user.change_status(status)
 
         updated_user = await self._user_repository.update(user)
-        if role is not None or status is not None:
+        if role is not None or status is not None or email is not None:
             await self._refresh_repository.revoke_all_for_user(user.id)
         return updated_user

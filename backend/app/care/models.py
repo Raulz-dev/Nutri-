@@ -57,7 +57,10 @@ class InvitationModel(Base, IdMixin):
 
 class EmailOutboxModel(Base, IdMixin):
     __tablename__ = "email_outbox"
-    invitation_id: Mapped[UUID] = mapped_column(ForeignKey("invitations.id"), unique=True)
+    invitation_id: Mapped[UUID | None] = mapped_column(ForeignKey("invitations.id"), unique=True)
+    password_reset_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("password_reset_tokens.id"), unique=True
+    )
     payload: Mapped[str | None] = mapped_column(Text)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     available_at: Mapped[datetime] = mapped_column(
@@ -66,5 +69,8 @@ class EmailOutboxModel(Base, IdMixin):
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (
+        CheckConstraint(
+            "(invitation_id IS NULL) <> (password_reset_id IS NULL)", name="ck_outbox_one_token"
+        ),
         Index("ix_outbox_pending", "available_at", postgresql_where=payload.is_not(None)),
     )

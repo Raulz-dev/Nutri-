@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     invitation_url: str = "http://localhost:5173/primeiro-acesso"
     outbox_encryption_key: str = ""
     metrics_token: str = ""
+    max_request_bytes: int = Field(default=1048576, gt=0)
     auth_rate_limit: int = Field(default=30, gt=0)
 
     smtp_host: str = "localhost"

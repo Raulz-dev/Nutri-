@@ -12,7 +12,7 @@ class JWTService:
         self._algorithm = algorithm
         self._expiration_minutes = expiration_minutes
 
-    def create_access_token(self, user_id: UUID) -> str:
+    def create_access_token(self, user_id: UUID, session_id: str | None = None) -> str:
         now = datetime.now(UTC)
         payload = {
             "sub": str(user_id),
@@ -21,11 +21,18 @@ class JWTService:
             "iat": now.timestamp(),
             "exp": now + timedelta(minutes=self._expiration_minutes),
         }
+        if session_id:
+            payload["sid"] = session_id
         return jwt.encode(payload, self._secret_key, algorithm=self._algorithm)
 
     def decode_access_token(self, token: str) -> dict[str, Any]:
         try:
-            payload = jwt.decode(token, self._secret_key, algorithms=[self._algorithm])
+            payload = jwt.decode(
+                token,
+                self._secret_key,
+                algorithms=[self._algorithm],
+                options={"require": ["sub", "exp", "iat", "jti"]},
+            )
         except InvalidTokenError as error:
             raise ValueError("Token inválido ou expirado.") from error
 

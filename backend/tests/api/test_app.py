@@ -44,3 +44,9 @@ def test_initial_routes_are_registered() -> None:
 
     user_resource = paths["/api/v1/users/{user_id}"]
     assert {"get", "patch", "delete"} <= user_resource.keys()
+
+
+def test_request_body_is_bounded():
+    response = client.post("/api/v1/auth/login", content=b"x" * (1048576 + 1))
+    assert response.status_code == 413
+    assert "x" * 100 not in response.text

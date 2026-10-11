@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -236,6 +236,7 @@ class SQLAlchemyRefreshSessionRepository(RefreshSessionRepository):
             RefreshSessionModel(
                 user_id=user_id,
                 token_hash=token_hash,
+                family_id=token_hash,
                 expires_at=expires_at,
             )
         )
@@ -250,45 +251,57 @@ class SQLAlchemyRefreshSessionRepository(RefreshSessionRepository):
             )
         )
 
+    async def _lock_family(self, token_hash: str) -> str | None:
+        family = await self._db.scalar(
+            select(RefreshSessionModel.family_id).where(
+                RefreshSessionModel.token_hash == token_hash
+            )
+        )
+        if family:
+            await self._db.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:family, 0))"),
+                {"family": family},
+            )
+        return family
+
     async def rotate(
-        self,
-        current_token_hash: str,
-        new_token_hash: str,
-        new_expires_at: datetime,
-    ) -> UUID | None:
-        now = datetime.now(UTC)
+        self, current_token_hash: str, new_token_hash: str, new_expires_at: datetime
+    ) -> tuple[UUID, str] | None:
+        family = await self._lock_family(current_token_hash)
+        if not family:
+            return None
         current = await self._db.scalar(
             select(RefreshSessionModel)
-            .where(
-                RefreshSessionModel.token_hash == current_token_hash,
-                RefreshSessionModel.revoked_at.is_(None),
-                RefreshSessionModel.expires_at > now,
-            )
+            .where(RefreshSessionModel.token_hash == current_token_hash)
             .with_for_update()
         )
-        if current is None:
+        now = datetime.now(UTC)
+        if current.revoked_at or current.expires_at <= now:
+            await self.revoke(current_token_hash)
             return None
-
         current.revoked_at = now
         self._db.add(
             RefreshSessionModel(
                 user_id=current.user_id,
+                family_id=family,
                 token_hash=new_token_hash,
                 expires_at=new_expires_at,
             )
         )
         await self._db.flush()
-        return current.user_id
+        return current.user_id, family
 
     async def revoke(self, token_hash: str) -> None:
-        await self._db.execute(
-            update(RefreshSessionModel)
-            .where(
-                RefreshSessionModel.token_hash == token_hash,
-                RefreshSessionModel.revoked_at.is_(None),
+        family = await self._lock_family(token_hash)
+        if family:
+            await self._db.execute(
+                update(RefreshSessionModel)
+                .where(
+                    RefreshSessionModel.family_id == family,
+                    RefreshSessionModel.revoked_at.is_(None),
+                )
+                .values(revoked_at=datetime.now(UTC))
             )
-            .values(revoked_at=datetime.now(UTC))
-        )
 
     async def revoke_all_for_user(self, user_id: UUID) -> None:
         await self._db.execute(

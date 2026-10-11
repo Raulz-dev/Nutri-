@@ -23,20 +23,21 @@ class RefreshAccess:
 
     async def execute(self, current_token: str) -> AuthTokens:
         new_token = create_opaque_token()
-        user_id = await self._refresh_repository.rotate(
+        rotated = await self._refresh_repository.rotate(
             current_token_hash=hash_token(current_token),
             new_token_hash=hash_token(new_token),
             new_expires_at=datetime.now(UTC) + timedelta(days=self._refresh_expiration_days),
         )
-        if user_id is None:
+        if rotated is None:
             raise InvalidRefreshTokenError("Refresh token inválido ou expirado.")
 
+        user_id, family_id = rotated
         user = await self._user_repository.find_by_id(user_id)
         if user is None or user.status != UserStatus.ACTIVE or user.deactivated_at:
             await self._refresh_repository.revoke(hash_token(new_token))
             raise InvalidRefreshTokenError("Refresh token inválido ou expirado.")
 
         return AuthTokens(
-            access_token=self._jwt_service.create_access_token(user.id),
+            access_token=self._jwt_service.create_access_token(user.id, family_id),
             refresh_token=new_token,
         )

@@ -43,3 +43,32 @@ class SMTPPasswordResetSender:
             if self._username:
                 smtp.login(self._username, self._password)
             smtp.send_message(message)
+
+
+class QueuedPasswordResetSender:
+    def __init__(self, db, encryption_key: str):
+        self.db = db
+        self.encryption_key = encryption_key
+
+    async def __call__(self, recipient: str, token: str):
+        import json
+
+        from cryptography.fernet import Fernet
+        from sqlalchemy import select
+
+        from app.care.models import EmailOutboxModel
+        from app.security.tokens import hash_token
+        from app.users.infrastructure.models import PasswordResetTokenModel
+
+        reset_id = await self.db.scalar(
+            select(PasswordResetTokenModel.id).where(
+                PasswordResetTokenModel.token_hash == hash_token(token)
+            )
+        )
+        payload = (
+            Fernet(self.encryption_key.encode())
+            .encrypt(json.dumps({"recipient": recipient, "token": token}).encode())
+            .decode()
+        )
+        self.db.add(EmailOutboxModel(password_reset_id=reset_id, payload=payload, attempts=0))
+        await self.db.flush()

@@ -90,7 +90,36 @@ class TelemetryMiddleware:
                         "Muitas tentativas. Tente novamente em instantes.",
                         {"Retry-After": "60"},
                     )(scope, receive, safe_send)
+            if scope["method"] in {"POST", "PUT", "PATCH"}:
+                body = bytearray()
+                async with asyncio.timeout(15):
+                    while True:
+                        chunk = await receive()
+                        if chunk["type"] == "http.disconnect":
+                            return
+                        body.extend(chunk.get("body", b""))
+                        if len(body) > get_settings().max_request_bytes:
+                            return await error_response(
+                                413, "Solicitação excede o limite permitido."
+                            )(scope, receive, safe_send)
+                        if not chunk.get("more_body", False):
+                            break
+                original_receive = receive
+                delivered = False
+
+                async def buffered_receive():
+                    nonlocal delivered
+                    if not delivered:
+                        delivered = True
+                        return {"type": "http.request", "body": bytes(body), "more_body": False}
+                    return await original_receive()
+
+                receive = buffered_receive
             await self.app(scope, receive, safe_send)
+        except TimeoutError:
+            await error_response(408, "Tempo limite da solicitação excedido.")(
+                scope, receive, safe_send
+            )
         except Exception as exc:
             logger.error(
                 json.dumps(
@@ -167,7 +196,21 @@ def configure_operations(app: FastAPI):
     async def ready():
         try:
             async with asyncio.timeout(3), AsyncSessionLocal() as db:
-                await db.execute(text("SELECT 1"))
+                from pathlib import Path
+
+                from alembic.config import Config
+                from alembic.script import ScriptDirectory
+
+                config = Config()
+                config.set_main_option(
+                    "script_location", str(Path(__file__).resolve().parents[1] / "migrations")
+                )
+                expected = set(ScriptDirectory.from_config(config).get_heads())
+                actual = set(
+                    (await db.execute(text("SELECT version_num FROM alembic_version"))).scalars()
+                )
+                if actual != expected:
+                    return error_response(503, "Serviço temporariamente indisponível.")
         except Exception:
             return error_response(503, "Serviço temporariamente indisponível.")
         return {"status": "ready"}

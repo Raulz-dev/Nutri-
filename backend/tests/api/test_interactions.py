@@ -235,11 +235,11 @@ async def test_appointments_messages_access_history_and_replay():
             ).status_code
             == 204
         )
+        conversation_rows = client.get(
+            "/api/v1/conversations", headers=nutritionist_headers
+        ).json()["items"]
         assert (
-            client.get("/api/v1/conversations", headers=nutritionist_headers).json()["items"][0][
-                "unread"
-            ]
-            == 5
+            next(item["unread"] for item in conversation_rows if item["id"] == conversation_id) == 5
         )
         new_message = client.post(
             f"/api/v1/conversations/{conversation_id}/messages",
@@ -261,11 +261,11 @@ async def test_appointments_messages_access_history_and_replay():
         assert len(older["items"]) == 6
         assert not ({item["id"] for item in older["items"]} & set(read_ids))
         assert older["next_cursor"] is None
+        conversation_rows = client.get(
+            "/api/v1/conversations", headers=nutritionist_headers
+        ).json()["items"]
         assert (
-            client.get("/api/v1/conversations", headers=nutritionist_headers).json()["items"][0][
-                "unread"
-            ]
-            == 6
+            next(item["unread"] for item in conversation_rows if item["id"] == conversation_id) == 6
         )
 
         cancelled = client.post(

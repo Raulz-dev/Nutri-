@@ -1,3 +1,4 @@
+from app.care.account_models import ProfessionalProfileModel, SupportMessageModel
 from app.care.clinical_models import (
     FollowUpModel,
     MeasurementModel,
@@ -21,6 +22,8 @@ from app.users.infrastructure.models import (
 )
 
 __all__ = [
+    "ProfessionalProfileModel",
+    "SupportMessageModel",
     "FollowUpModel",
     "MeasurementModel",
     "PatientIntakeRevisionModel",

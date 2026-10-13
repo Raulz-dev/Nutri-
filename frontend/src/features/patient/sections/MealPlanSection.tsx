@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 
 import { PanelHeader } from "../components/PanelHeader";
 import { PatientIcon } from "../components/PatientIcon";
-import { usePatientData } from "../../demo/PatientContext";
+import { usePatientData } from "../usePatientData";
 import { usePatientClinical } from "../../care/PatientClinicalContext";
 
 export function MealPlanSection() {

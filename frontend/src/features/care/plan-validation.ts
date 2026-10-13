@@ -1,4 +1,4 @@
-import type { Plan } from "../demo/types";
+import type { Plan } from "./types";
 
 export function validatePlan(plan: Plan) {
   if (!plan.title.trim() || !plan.startDate || !plan.endDate || plan.endDate < plan.startDate) {

@@ -10,8 +10,8 @@ import {
   listMeasurements, measurementOverview, saveWeightGoal,
   type ClinicalFollowUp, type ClinicalMeasurement, type IntakeRecord, type WeightGoalRecord,
 } from "../../care/clinical-api";
-import { EvolutionChart } from "../../demo/EvolutionChart";
-import { dateLabel, today } from "../../demo/store";
+import { EvolutionChart } from "../../care/EvolutionChart";
+import { dateLabel, today } from "../../../lib/formatters";
 import { PatientPreferences } from "../components/PatientPreferences";
 import { PlanEditor } from "../components/PlanEditor";
 import { Modal } from "../components/Modal";

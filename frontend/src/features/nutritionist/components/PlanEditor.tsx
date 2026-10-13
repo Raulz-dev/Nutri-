@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import type { Food, Meal, Plan } from "../../demo/types";
+import type { Food, Meal, Plan } from "../../care/types";
 import { useAuth } from "../../auth/useAuth";
-import { today } from "../../demo/store";
+import { today } from "../../../lib/formatters";
 import { createMealPlan, publishMealPlan, updateMealPlan, type MealPlanRecord } from "../../care/meal-plan-api";
 import { validatePlan } from "../../care/plan-validation";
 import { Modal } from "./Modal";

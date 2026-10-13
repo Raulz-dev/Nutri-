@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { getPatient, type PatientRow } from "../../care/api";
 import { getIntake, measurementOverview, type ClinicalMeasurement, type IntakeRecord } from "../../care/clinical-api";
-import { EvolutionChart } from "../../demo/EvolutionChart";
+import { EvolutionChart } from "../../care/EvolutionChart";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { PatientPreferences } from "../components/PatientPreferences";
 

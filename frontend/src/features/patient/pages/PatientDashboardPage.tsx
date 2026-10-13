@@ -1,13 +1,13 @@
-import { PatientContext, usePatientData } from "../../demo/PatientContext";
-import { initials } from "../../demo/store";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { usePatientData } from "../usePatientData";
+import { initials } from "../../../lib/formatters";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "../../auth/useAuth";
 import { PatientIcon, type IconName } from "../components/PatientIcon";
 import { PatientLinkInvitations } from "../components/PatientLinkInvitations";
 import { PatientClinicalProvider, usePatientClinical } from "../../care/PatientClinicalContext";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
-import { type PatientSection } from "../mocks/patient-data";
+import { type PatientSection } from "../patient-section";
 import { HomeSection } from "../sections/HomeSection";
 import { MealPlanSection } from "../sections/MealPlanSection";
 import { MessagesSection } from "../sections/MessagesSection";
@@ -34,19 +34,17 @@ const sectionsBySlug: Record<string, PatientSection> = {
 };
 
 export function PatientDashboardPage() {
-  const { patientId } = useParams();
   const { currentUser, session } = useAuth();
   return <PatientClinicalProvider token={session?.accessToken ?? ""} patientId={currentUser!.id}>
-    <PatientContext.Provider value={patientId ?? null}><PatientDashboardContent key={patientId ?? currentUser?.id}/></PatientContext.Provider>
+    <PatientDashboardContent key={currentUser!.id} />
   </PatientClinicalProvider>;
 }
 
 function PatientDashboardContent() {
   const { view: patientData } = usePatientData();
   const clinical = usePatientClinical();
-  const { patientId: previewId } = useParams();
-  const basePath = previewId ? `/app/nutricionista/pacientes/${previewId}/previa` : "/app/paciente";
-  const menu = navigation.map(item => ({ ...item, path: item.path.replace("/app/paciente", basePath) }));
+  const basePath = "/app/paciente";
+  const menu = navigation;
   const { section: sectionSlug } = useParams<{ section?: string }>();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -104,7 +102,6 @@ function PatientDashboardContent() {
 
       <section className={`patient-content${hasFixedView ? " has-fixed-view" : ""}${section === "messages" ? " has-chat" : ""}`}>
         <ErrorToast message={clinical.error} />
-        {previewId && <div className="patient-preview-notice"><span>Prévia demonstrativa · {patientData.fullName}</span><Link to={`/app/nutricionista/pacientes/${previewId}`}>Voltar ao acompanhamento</Link></div>}
         <header className="patient-header">
           <div>
             <span className="patient-kicker">{section === "home" ? new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) : "Área do paciente"}</span>
@@ -116,7 +113,7 @@ function PatientDashboardContent() {
           </div>
         </header>
 
-        {!previewId && <PatientLinkInvitations />}
+        <PatientLinkInvitations />
 
         {section === "home" ? <HomeSection onNavigate={navigateToSection} /> : null}
         {section === "meal-plan" ? <MealPlanSection /> : null}

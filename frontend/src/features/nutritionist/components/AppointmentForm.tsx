@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useAuth } from "../../auth/useAuth";
-import { today } from "../../demo/store";
+import { today } from "../../../lib/formatters";
 import type { PatientRow } from "../../care/api";
 import { createAppointment, updateAppointment, type AppointmentRecord } from "../../care/interaction-api";
 import { Modal } from "./Modal";

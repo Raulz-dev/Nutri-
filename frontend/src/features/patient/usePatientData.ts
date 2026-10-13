@@ -1,15 +1,10 @@
-import { createContext, useContext } from "react";
 import { useAuth } from "../auth/useAuth";
-import {
-  dateLabel,
-} from "./store";
+import { dateLabel } from "../../lib/formatters";
 import { usePatientClinical } from "../care/PatientClinicalContext";
-export const PatientContext = createContext<string | null>(null);
 export function usePatientData() {
-  const previewId = useContext(PatientContext);
   const { currentUser } = useAuth();
   const clinical = usePatientClinical();
-  const patientId = previewId ?? currentUser!.id;
+  const patientId = currentUser!.id;
   const patient = clinical.patient ?? currentUser!;
   const owner = clinical.patient?.nutritionist_id ?? undefined;
   const nutritionist = clinical.patient?.nutritionist_name ?? "Sem nutricionista";

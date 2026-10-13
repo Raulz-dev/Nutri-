@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { initials } from "../../demo/store";
+import { initials } from "../../../lib/formatters";
 import {
   PatientIcon,
   type IconName,

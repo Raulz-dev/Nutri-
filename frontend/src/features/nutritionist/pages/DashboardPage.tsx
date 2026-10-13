@@ -4,7 +4,7 @@ import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
 import { getNutritionistPlanSummary, listPatients, type NutritionistPlanSummary } from "../../care/api";
 import { listAllConversations, listAppointments, type AppointmentRecord } from "../../care/interaction-api";
-import { dateLabel } from "../../demo/store";
+import { dateLabel } from "../../../lib/formatters";
 
 export function NutritionistDashboardPage() {
   const { session } = useAuth();

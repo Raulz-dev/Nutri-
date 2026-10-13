@@ -1,5 +1,5 @@
 import { apiRequest } from "../../lib/http-client";
-import type { Plan } from "../demo/types";
+import type { Plan } from "./types";
 import type { Page } from "./api";
 
 export type MealPlanRecord = Plan & {

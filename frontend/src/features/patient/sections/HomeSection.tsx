@@ -2,10 +2,10 @@ import { useModalBehavior } from "../../../hooks/useModalBehavior";
 import { useRef, useState } from "react";
 
 import { PatientIcon, type IconName } from "../components/PatientIcon";
-import type { PatientSection } from "../mocks/patient-data";
-import { initials } from "../../demo/store";
-import { EvolutionChart } from "../../demo/EvolutionChart";
-import { usePatientData } from "../../demo/PatientContext";
+import type { PatientSection } from "../patient-section";
+import { initials } from "../../../lib/formatters";
+import { EvolutionChart } from "../../care/EvolutionChart";
+import { usePatientData } from "../usePatientData";
 import { usePatientClinical } from "../../care/PatientClinicalContext";
 
 export function HomeSection({ onNavigate }: { onNavigate: (section: PatientSection) => void }) {

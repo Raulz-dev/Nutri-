@@ -681,22 +681,6 @@
 .nutri-chat-back {
   display: none;
 }
-.patient-preview-notice {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  background: #eee5fb;
-  color: #7142cd;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 11px;
-  margin-bottom: 14px;
-}
-.patient-content.has-fixed-view:has(.patient-preview-notice) {
-  height: auto;
-  min-height: 100dvh;
-  overflow: visible;
-}
 @media (max-width: 1100px) {
   .nutri-main {
     padding: 24px;
@@ -885,9 +869,6 @@
   .shared-conversation {
     height: 65dvh;
     max-height: none;
-  }
-  .patient-preview-notice {
-    flex-direction: column;
   }
   .nutri-card > header {
     flex-wrap: wrap;

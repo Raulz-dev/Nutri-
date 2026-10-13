@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { listPatients, type PatientRow } from "../../care/api";
 import { changeAppointmentStatus, listAppointments, type AppointmentRecord } from "../../care/interaction-api";
-import { dateLabel } from "../../demo/store";
+import { dateLabel } from "../../../lib/formatters";
 import { TablePagination } from "../../../components/shared/TablePagination";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { AppointmentForm } from "../components/AppointmentForm";

@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/useAuth";
 import { usePatientClinical } from "../../care/PatientClinicalContext";
 import { listMeasurements, type ClinicalMeasurement } from "../../care/clinical-api";
-import { usePatientData } from "../../demo/PatientContext";
-import { dateLabel } from "../../demo/store";
-import { EvolutionChart } from "../../demo/EvolutionChart";
+import { usePatientData } from "../usePatientData";
+import { dateLabel } from "../../../lib/formatters";
+import { EvolutionChart } from "../../care/EvolutionChart";
 import { TablePagination } from "../../../components/shared/TablePagination";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 export function ProgressSection() {

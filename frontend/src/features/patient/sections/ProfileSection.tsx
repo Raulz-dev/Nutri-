@@ -1,5 +1,5 @@
 import { PanelHeader } from "../components/PanelHeader";
-import { usePatientData } from "../../demo/PatientContext";
+import { usePatientData } from "../usePatientData";
 import { usePatientClinical } from "../../care/PatientClinicalContext";
 
 export function ProfileSection() {

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Measurement } from "../demo/types";
+import type { Measurement } from "./types";
 import { getPatient, type PatientRow } from "./api";
 import { getCurrentPlan, type MealPlanRecord } from "./meal-plan-api";
 import { getNextAppointment, type AppointmentRecord } from "./interaction-api";

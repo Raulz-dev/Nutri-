@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { CareConversationPanel } from "../../care/CareConversationPanel";
 import { listAllConversations, listConversations, type ConversationRecord } from "../../care/interaction-api";
-import { initials } from "../../demo/store";
+import { initials } from "../../../lib/formatters";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 
 export function NutritionistMessagesPage() {

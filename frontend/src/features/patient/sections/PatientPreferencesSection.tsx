@@ -3,14 +3,13 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { type PatientIntake, emptyPatientIntake } from "../patient-intake";
 import { usePatientData } from "../usePatientData";
 import { useAuth } from "../../auth/useAuth";
-import { useErrorToast } from "../../../components/ui/ErrorToast";
+import { useErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { usePatientClinical } from "../../care/PatientClinicalContext";
 import { saveIntake } from "../../care/clinical-api";
 
 import { Field, IntakeCard, RestrictionTags, TagInput } from "../components/preferences/IntakeFields";
 
 type IntakeGroup = "goal" | "food" | "restrictions" | "health" | "routine" | "lifestyle";
-type SaveStatus = "idle" | "success";
 type NumericErrors = Partial<Record<"mealsPerDay" | "waterLiters" | "sleepHours", string>>;
 
 export function PatientPreferencesSection() {
@@ -24,7 +23,7 @@ export function PatientPreferencesSection() {
   useEffect(() => { setIntake(JSON.parse(savedIntake) as PatientIntake); }, [savedIntake]);
   const [goalError, setGoalError] = useState(false);
   const [numericErrors, setNumericErrors] = useState<NumericErrors>({});
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const showSuccess = useSuccessToast();
   const goalRef = useRef<HTMLSelectElement>(null);
   const mealsRef = useRef<HTMLInputElement>(null);
   const waterRef = useRef<HTMLInputElement>(null);
@@ -32,7 +31,6 @@ export function PatientPreferencesSection() {
 
   function updateGroup<K extends IntakeGroup>(group: K, values: Partial<PatientIntake[K]>) {
     setIntake((current) => ({ ...current, [group]: { ...current[group], ...values } }));
-    setSaveStatus("idle");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -48,7 +46,6 @@ export function PatientPreferencesSection() {
     setGoalError(hasGoalError);
     setNumericErrors(nextNumericErrors);
     if (hasGoalError || hasNumericError) {
-      setSaveStatus("idle");
       showError([hasGoalError ? "Selecione um objetivo para continuar." : "", ...Object.values(nextNumericErrors)].filter(Boolean).join(" "));
       if (hasGoalError) goalRef.current?.focus();
       else (nextNumericErrors.mealsPerDay ? mealsRef : nextNumericErrors.waterLiters ? waterRef : sleepRef).current?.focus();
@@ -60,7 +57,7 @@ export function PatientPreferencesSection() {
     try {
       const saved = await saveIntake(session?.accessToken ?? "", patientId, intake, clinical.intake?.revision ?? 0);
       clinical.acceptIntake(saved);
-      setSaveStatus("success");
+      showSuccess("Informações salvas na plataforma.");
     } catch (reason) {
       showError(reason instanceof Error ? reason.message : "Não foi possível salvar. Tente novamente.");
     } finally { setBusy(false); }
@@ -237,7 +234,6 @@ export function PatientPreferencesSection() {
             value={intake.observations}
             onChange={(event) => {
               setIntake((current) => ({ ...current, observations: event.target.value }));
-              setSaveStatus("idle");
             }}
             placeholder="Escreva aqui outras informações sobre sua alimentação, saúde ou rotina"
           />
@@ -245,9 +241,7 @@ export function PatientPreferencesSection() {
       </IntakeCard>
 
       <footer className="intake-actions">
-        <div aria-live="polite">
-          {saveStatus === "success" ? <p className="intake-feedback is-success">Informações salvas na plataforma.</p> : null}
-        </div>
+        <div />
         <button type="submit" disabled={busy || clinical.loading}>{busy ? "Salvando..." : "Salvar informações"}</button>
       </footer>
     </form>

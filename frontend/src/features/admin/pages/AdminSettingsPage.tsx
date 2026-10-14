@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useErrorToast } from "../../../components/ui/ErrorToast";
+import { useErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
 import { AdminShell } from "../AdminShell";
 import {
@@ -19,7 +19,7 @@ export function AdminSettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
-  const [saved, setSaved] = useState("");
+  const showSuccess = useSuccessToast();
   const [busy, setBusy] = useState(false);
   const [originalEmail, setOriginalEmail] = useState("");
   useEffect(() => {
@@ -44,7 +44,7 @@ export function AdminSettingsPage() {
     event.preventDefault();
     if (!settings || busy) return;
     setBusy(true);
-    setSaved("");
+
     try {
       const value = await saveSettings(token, {
         ...settings,
@@ -57,7 +57,7 @@ export function AdminSettingsPage() {
         return;
       }
       await reloadUser();
-      setSaved("Configurações salvas.");
+      showSuccess("Configurações salvas.");
     } catch (error) {
       showError(error instanceof Error ? error.message : "Falha ao salvar.");
     } finally {
@@ -140,7 +140,7 @@ export function AdminSettingsPage() {
                 />
               </label>
               <p>Ao alterar o e-mail, entre novamente com o novo endereço.</p>
-              {saved && <p role="status">{saved}</p>}
+
               <button className="admin-primary-button" disabled={busy}>
                 Salvar configurações
               </button>

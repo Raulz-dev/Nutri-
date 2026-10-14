@@ -1,10 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { initials } from "../../../lib/formatters";
-import {
-  PatientIcon,
-  type IconName,
-} from "../../patient/components/PatientIcon";
+import { PatientIcon, type IconName } from "../../patient/components/PatientIcon";
 import "../../patient/styles/patient.css";
 import "../styles/nutritionist.css";
 const items: { path: string; label: string; icon: IconName }[] = [
@@ -28,11 +25,7 @@ export function NutritionistLayout() {
         </div>
         <nav aria-label="Área do nutricionista">
           {items.map((item) => (
-            <NavLink
-              key={item.path}
-              to={`/app/nutricionista${item.path}`}
-              end={!item.path}
-            >
+            <NavLink key={item.path} to={`/app/nutricionista${item.path}`} end={!item.path}>
               <PatientIcon name={item.icon} />
               <span>{item.label}</span>
             </NavLink>
@@ -60,9 +53,6 @@ export function NutritionistLayout() {
         </button>
       </aside>
       <main className="nutri-main">
-        <div className="nutri-demo-label">
-          Dados salvos na plataforma
-        </div>
         <Outlet />
       </main>
     </div>

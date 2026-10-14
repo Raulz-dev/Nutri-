@@ -110,7 +110,11 @@ export function CareConversationPanel({ conversation, onRead }: {
     </div>
     {conversation.active && <form className="chat-composer" onSubmit={submit}>
       <label className="sr-only" htmlFor="conversation-draft">Mensagem</label>
-      <textarea id="conversation-draft" value={draft} maxLength={4000} onChange={event => { setDraft(event.target.value); setPendingId(""); }} placeholder="Escreva uma mensagem..." />
+      <textarea onKeyDown={event => {
+        if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+        event.preventDefault();
+        if (!event.repeat && !busy && draft.trim()) event.currentTarget.form?.requestSubmit();
+      }} id="conversation-draft" value={draft} maxLength={4000} onChange={event => { setDraft(event.target.value); setPendingId(""); }} placeholder="Escreva uma mensagem..." />
       <button type="submit" disabled={!draft.trim() || busy}>Enviar</button>
     </form>}
   </article>;

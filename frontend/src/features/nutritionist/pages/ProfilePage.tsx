@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useErrorToast } from "../../../components/ui/ErrorToast";
+import { useErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
 import {
   getProfessionalProfile,
@@ -21,7 +21,7 @@ export function NutritionistProfilePage() {
   const [retry, setRetry] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const showSuccess = useSuccessToast();
   useEffect(() => {
     let active = true;
     setLoadError("");
@@ -43,10 +43,10 @@ export function NutritionistProfilePage() {
     e.preventDefault();
     if (!loaded || busy) return;
     setBusy(true);
-    setMessage("");
+
     try {
       setForm(await saveProfessionalProfile(token, form));
-      setMessage("Perfil salvo.");
+      showSuccess("Perfil salvo.");
     } catch (error) {
       showError(
         error instanceof Error
@@ -116,7 +116,7 @@ export function NutritionistProfilePage() {
           <button className="nutri-primary" disabled={!loaded || busy}>
             {busy ? "Salvando..." : "Salvar perfil"}
           </button>
-          {message && <p role="status">{message}</p>}
+
         </form>
       </section>
     </>

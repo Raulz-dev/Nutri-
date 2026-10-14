@@ -233,6 +233,11 @@ function SupportConversation({
             Mensagem
           </label>
           <textarea
+            onKeyDown={event => {
+              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+              event.preventDefault();
+              if (!event.repeat && !busy && draft.trim()) event.currentTarget.form?.requestSubmit();
+            }}
             id="support-draft"
             maxLength={4000}
             value={draft}

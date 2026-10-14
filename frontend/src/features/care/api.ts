@@ -2,7 +2,7 @@ import { apiRequest } from "../../lib/http-client";
 import type { User } from "../users/types";
 
 export type Page<T> = { items: T[]; total: number; offset: number; limit: number };
-export type PatientRow = { id: string; name: string; email: string; status: "active" | "blocked"; deactivated_at: string | null; nutritionist_id: string | null; nutritionist_name: string | null };
+export type PatientRow = { pending_invitation?: boolean; id: string; name: string; email: string; status: "active" | "blocked"; deactivated_at: string | null; nutritionist_id: string | null; nutritionist_name: string | null };
 export type Assignment = { patient_id: string; nutritionist_id: string; started_at: string };
 export type LinkInvitation = { id: string; patient_id: string; patient_name: string; nutritionist_id: string; nutritionist_name: string; expires_at: string };
 export type InvitationDeliveryStatus = { user_id: string; status: "pending" | "sent" | "failed" | "expired"; resend_available_at: string | null };
@@ -19,8 +19,8 @@ export const getNutritionistPlanSummary = (token: string) => apiRequest<Nutritio
 
 export const listUsers = (token: string, offset = 0, limit = 100) =>
   apiRequest<Page<User>>(`/users?offset=${offset}&limit=${limit}`, { token });
-export const listPatients = (token: string, offset = 0, q = "", includeDeactivated = false) =>
-  apiRequest<Page<PatientRow>>(`/patients?offset=${offset}&limit=10&q=${encodeURIComponent(q)}${includeDeactivated ? "&include_deactivated=true" : ""}`, { token });
+export const listPatients = (token: string, offset = 0, q = "", includeDeactivated = false, includePending = false, limit = 10) =>
+  apiRequest<Page<PatientRow>>(`/patients?offset=${offset}&limit=${limit}&q=${encodeURIComponent(q)}${includeDeactivated ? "&include_deactivated=true" : ""}${includePending ? "&include_pending=true" : ""}`, { token });
 export const getPatient = (token: string, id: string) =>
   apiRequest<PatientRow>(`/patients/${id}`, { token });
 export const assignPatient = (token: string, patientId: string, nutritionistId: string) =>
@@ -63,3 +63,7 @@ export async function listAllUsers(token: string) {
 export type AuditEvent = { id: string; action: string; entity_type: string; entity_id: string | null; target_name: string | null; actor_name: string | null; event_data: Record<string,string>; created_at: string };
 export const listAudit = (token: string, offset = 0, action = "") =>
   apiRequest<Page<AuditEvent>>(`/admin/audit-events?offset=${offset}&limit=10${action ? `&action=${encodeURIComponent(action)}` : ""}`, { token });
+
+export type InvitationCandidate = { id: string; name: string; email: string };
+export const listInvitationCandidates = (token: string, q: string, offset: number) =>
+  apiRequest<{ items: InvitationCandidate[]; total: number }>(`/care-link-invitations/candidates?q=${encodeURIComponent(q)}&offset=${offset}&limit=10`, { token });

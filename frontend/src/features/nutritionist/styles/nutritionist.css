@@ -901,3 +901,9 @@
 .nutri-pending-invitations li{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid #f1edf5;font-size:13px}
 .nutri-pending-invitations button{border:0;background:transparent;color:#7542ce;cursor:pointer;font-weight:700}
 .nutri-notice{color:#315e45;font-size:13px}
+
+.nutri-invite-candidates{display:grid;gap:8px;max-height:280px;overflow-y:auto}
+.nutri-invite-candidates>button{display:grid;gap:4px;width:100%;padding:12px;text-align:left;background:#fff;border:1px solid #e5deed;border-radius:12px;color:inherit;cursor:pointer;overflow-wrap:anywhere}
+.nutri-invite-candidates>button[aria-pressed="true"]{border-color:#7141c8;background:#f3edfc}
+.nutri-invite-candidates>button:focus-visible{outline:2px solid #7141c8;outline-offset:2px}
+.nutri-invite-candidates small{color:#776e83}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { ErrorToast } from "../../../components/ui/ErrorToast";
+import { ErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { deactivateUser, inviteNutritionist, listAllUsers, listInvitationStatuses, resendInvitation, updateUser, type InvitationDeliveryStatus } from "../../care/api";
 import type { User } from "../../users/types";
 import { AdminIcon, AdminShell } from "../AdminShell";
@@ -22,7 +22,7 @@ export function AdminNutritionistsPage() {
   const [deleting, setDeleting] = useState<User | null>(null);
   const [error, setError] = useState("");
   const [modalError, setModalError] = useState("");
-  const [notice, setNotice] = useState("");
+  const showSuccess = useSuccessToast();
   const [busy, setBusy] = useState(false);
   const refresh = useCallback(async () => setUsers(await listAllUsers(token)), [token]);
   const refreshStatuses = useCallback(async () => {
@@ -55,11 +55,11 @@ export function AdminNutritionistsPage() {
   const pagination = usePagination(nutritionists, search);
 
   async function invite(name: string, email: string) {
-    setBusy(true); setModalError(""); setNotice("");
+    setBusy(true); setModalError("");
     try {
       await inviteNutritionist(token, name, email);
       setInviting(false);
-      setNotice("Convite registrado para envio por e-mail.");
+      showSuccess("Convite registrado para envio por e-mail.");
       try { await Promise.all([refresh(), refreshStatuses()]); }
       catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível atualizar a lista de nutricionistas."); }
     } catch (reason) {
@@ -68,10 +68,10 @@ export function AdminNutritionistsPage() {
   }
 
   async function resend(user: User) {
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError("");
     try {
       await resendInvitation(token, user.id);
-      setNotice(`Novo convite registrado para ${user.email}.`);
+      showSuccess(`Novo convite registrado para ${user.email}.`);
       await Promise.all([refresh(), refreshStatuses()]);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível reenviar o convite.");
@@ -79,7 +79,7 @@ export function AdminNutritionistsPage() {
   }
 
   async function toggle(user: User) {
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError("");
     try {
       await updateUser(token, user.id, { status: user.status === "active" ? "blocked" : "active" });
       await refresh();
@@ -90,7 +90,7 @@ export function AdminNutritionistsPage() {
 
   async function deactivate() {
     if (!deleting) return;
-    setBusy(true); setModalError(""); setNotice("");
+    setBusy(true); setModalError("");
     try {
       await deactivateUser(token, deleting.id);
       setDeleting(null);
@@ -102,7 +102,7 @@ export function AdminNutritionistsPage() {
 
   return <AdminShell title="Nutricionistas" subtitle="Convide profissionais e gerencie suas contas.">
     <ErrorToast message={error} />
-    {notice && <p className="admin-form-message" role="status">{notice}</p>}
+
     <div className="users-page-action"><button type="button" className="admin-primary-button" onClick={() => { setModalError(""); setInviting(true); }}><AdminIcon name="plus"/> Convidar nutricionista</button></div>
     <section className="admin-panel users-search-panel"><div className="users-filters"><label className="admin-search"><span className="sr-only">Pesquisar nutricionistas</span><AdminIcon name="search"/><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Nome ou e-mail" /></label></div></section>
     <section className="admin-panel users-table-panel"><div className="users-table-wrap"><table className="users-table nutritionists-table"><thead><tr><th>Nutricionista</th><th>Status</th><th>Ações</th></tr></thead><tbody>

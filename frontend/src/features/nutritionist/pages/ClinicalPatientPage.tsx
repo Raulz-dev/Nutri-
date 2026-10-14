@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ErrorToast } from "../../../components/ui/ErrorToast";
+import { ErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { TablePagination } from "../../../components/shared/TablePagination";
 import { useAuth } from "../../auth/useAuth";
 import { getPatient, type PatientRow } from "../../care/api";
@@ -46,7 +46,7 @@ export function ClinicalPatientPage() {
   const [planLoading, setPlanLoading] = useState(true);
   const [error, setError] = useState("");
   const [planError, setPlanError] = useState("");
-  const [notice, setNotice] = useState("");
+  const showSuccess = useSuccessToast();
   const requestSequence = useRef(0);
   const planRequestSequence = useRef(0);
   const goalDraftDirty = useRef(false);
@@ -115,7 +115,7 @@ export function ClinicalPatientPage() {
 
   async function submitMeasurement(event: FormEvent) {
     event.preventDefault();
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError("");
     try {
       await addMeasurement(token, patientId, {
         measured_on: date, weight_kg: Number(weight),
@@ -127,7 +127,7 @@ export function ClinicalPatientPage() {
       return;
     }
     setWeight(""); setBodyFat(""); setMeasurementNote("");
-    setNotice("Medição registrada no histórico.");
+    showSuccess("Medição registrada no histórico.");
     setMeasurementPage(1);
     try {
       await load(1, assessmentPage);
@@ -138,7 +138,7 @@ export function ClinicalPatientPage() {
 
   async function submitAssessment(event: FormEvent) {
     event.preventDefault();
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError("");
     try {
       await addFollowUp(token, patientId, assessment);
     } catch (reason) {
@@ -147,7 +147,7 @@ export function ClinicalPatientPage() {
       return;
     }
     setAssessment("");
-    setNotice("Avaliação registrada no histórico.");
+    showSuccess("Avaliação registrada no histórico.");
     setAssessmentPage(1);
     try {
       await load(measurementPage, 1);
@@ -158,13 +158,13 @@ export function ClinicalPatientPage() {
 
   async function submitGoal(event: FormEvent) {
     event.preventDefault();
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError("");
     try {
       const saved = await saveWeightGoal(token, patientId, Number(goalValue), goal?.revision ?? 0);
       goalDraftDirty.current = false;
       setGoal(saved);
       setGoalValue(saved.target_kg?.toString() ?? "");
-      setNotice("Meta de peso salva na plataforma.");
+      showSuccess("Meta de peso salva na plataforma.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível salvar a meta.");
     } finally { setBusy(false); }
@@ -182,12 +182,12 @@ export function ClinicalPatientPage() {
 
   async function confirmClosePlan() {
     if (!closing || busy) return;
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError("");
     try {
       const closed = await closeMealPlan(token, patientId, closing.id, closing.revision);
       setPlans(current => current.map(plan => plan.id === closed.id ? closed : plan));
       setClosing(null);
-      setNotice("Plano encerrado e preservado no histórico.");
+      showSuccess("Plano encerrado e preservado no histórico.");
       refreshPlans();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Não foi possível encerrar o plano.");
@@ -211,7 +211,7 @@ export function ClinicalPatientPage() {
         <span>ACOMPANHAMENTO</span><h1>{patient.name}</h1><p>{patient.email}</p>
         <Link to={`/app/nutricionista/pacientes/${patientId}/previa`}>Abrir prévia somente leitura →</Link>
       </header>
-      {notice && <p role="status" className="nutri-notice">{notice}</p>}
+
       <section className="nutri-card">
         <h2>Avaliações</h2>
         <form className="nutri-form" onSubmit={submitAssessment}>

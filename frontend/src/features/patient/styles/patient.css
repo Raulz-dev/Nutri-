@@ -567,3 +567,6 @@
 .patient-link-invitation button+button{background:#fff;color:#7542ce}
 .patient-link-invitation button:disabled{opacity:.6;cursor:wait}
 @media(max-width:640px){.patient-link-invitation{align-items:stretch;flex-direction:column}}
+
+.patient-profile-logout{display:none}
+@media(max-width:700px){.patient-profile-logout{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:44px;margin-top:20px;padding:12px 16px;color:#6430c5;background:#f3edfc;border:1px solid #e4d9f4;border-radius:14px;font:inherit;font-weight:600;cursor:pointer}.patient-profile-logout svg{width:20px;height:20px}.patient-profile-logout:hover{background:#eae0fa}.patient-profile-logout:focus-visible{outline:2px solid #6430c5;outline-offset:3px}}

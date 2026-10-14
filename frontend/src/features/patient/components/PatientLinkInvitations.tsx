@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/useAuth";
-import { ErrorToast } from "../../../components/ui/ErrorToast";
+import { ErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import {
   acceptLinkInvitation,
   declineLinkInvitation,
@@ -14,7 +14,7 @@ export function PatientLinkInvitations() {
   const [invitations, setInvitations] = useState<LinkInvitation[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const showSuccess = useSuccessToast();
 
   useEffect(() => {
     let active = true;
@@ -27,14 +27,14 @@ export function PatientLinkInvitations() {
   async function answer(invitation: LinkInvitation, accept: boolean) {
     setBusy(true);
     setError("");
-    setNotice("");
+
     try {
       if (accept) {
         await acceptLinkInvitation(token, invitation.id);
-        setNotice(`Vínculo com ${invitation.nutritionist_name} confirmado.`);
+        showSuccess(`Vínculo com ${invitation.nutritionist_name} confirmado.`);
       } else {
         await declineLinkInvitation(token, invitation.id);
-        setNotice("Convite recusado.");
+        showSuccess("Convite recusado.");
       }
       setInvitations(await listLinkInvitations(token));
     } catch (reason) {
@@ -44,10 +44,10 @@ export function PatientLinkInvitations() {
     }
   }
 
-  if (!invitations.length && !notice) return error ? <ErrorToast message={error} /> : null;
+  if (!invitations.length) return error ? <ErrorToast message={error} /> : null;
   return <section className="patient-link-invitations" aria-label="Convites de nutricionistas">
     <ErrorToast message={error} />
-    {notice && <p role="status">{notice}</p>}
+
     {invitations.length > 0 && <>
       <h2>Convites para acompanhamento</h2>
       {invitations.map((invitation) => <div className="patient-link-invitation" key={invitation.id}>

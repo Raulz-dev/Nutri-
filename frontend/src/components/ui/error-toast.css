@@ -5,3 +5,7 @@
 .error-toast button{width:24px;height:24px;flex:none;padding:0;color:var(--muted);background:transparent;border:0;border-radius:6px;cursor:pointer;font-size:21px;line-height:1}
 .error-toast button:hover,.error-toast button:focus-visible{color:var(--danger);background:#fbedef}
 @media(max-width:640px){.error-toast-stack{top:12px;right:16px;left:16px;width:auto}.error-toast{padding:12px}}
+
+.success-toast{border-color:#d4e7dc;border-left-color:#27834b}
+.success-toast .error-toast-icon{background:#27834b}
+.success-toast button:hover,.success-toast button:focus-visible{color:#216c3e;background:#edf7f0}

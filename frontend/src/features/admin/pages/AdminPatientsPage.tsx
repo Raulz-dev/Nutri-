@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { ErrorToast } from "../../../components/ui/ErrorToast";
+import { ErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { assignPatient, deactivateUser, listAllUsers, listPatients, unassignPatient, updateUser, type PatientRow } from "../../care/api";
 import type { User } from "../../users/types";
 import { AdminIcon, AdminShell } from "../AdminShell";
@@ -20,7 +20,7 @@ export function AdminPatientsPage() {
   const [search, setSearch] = useState(params.get("q") ?? "");
   const [error, setError] = useState("");
   const [modalError, setModalError] = useState("");
-  const [notice, setNotice] = useState("");
+  const showSuccess = useSuccessToast();
   const [assigning, setAssigning] = useState<PatientRow | null>(null);
   const [deleting, setDeleting] = useState<PatientRow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -42,7 +42,7 @@ export function AdminPatientsPage() {
   }, [token]);
 
   async function toggle(patient: PatientRow) {
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError("");
     try {
       await updateUser(token, patient.id, { status: patient.status === "active" ? "blocked" : "active" });
       await refresh();
@@ -53,7 +53,7 @@ export function AdminPatientsPage() {
 
   async function deactivate() {
     if (!deleting) return;
-    setBusy(true); setModalError(""); setNotice("");
+    setBusy(true); setModalError("");
     try {
       await deactivateUser(token, deleting.id);
       setDeleting(null);
@@ -65,12 +65,12 @@ export function AdminPatientsPage() {
 
   async function changeAssignment(nutritionistId?: string) {
     if (!assigning) return;
-    setBusy(true); setModalError(""); setNotice("");
+    setBusy(true); setModalError("");
     try {
       if (nutritionistId) await assignPatient(token, assigning.id, nutritionistId);
       else await unassignPatient(token, assigning.id);
       setAssigning(null);
-      setNotice(nutritionistId ? "Vínculo atualizado." : "Vínculo removido.");
+      showSuccess(nutritionistId ? "Vínculo atualizado." : "Vínculo removido.");
       try { await refresh(); }
       catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível atualizar a lista de pacientes."); }
       requestAnimationFrame(() => assignmentTrigger.current?.focus());
@@ -81,7 +81,7 @@ export function AdminPatientsPage() {
 
   return <AdminShell title="Pacientes" subtitle="Gerencie o acesso e o nutricionista responsável por cada paciente.">
     <ErrorToast message={error} />
-    {notice && <p className="admin-form-message" role="status">{notice}</p>}
+
     <section className="admin-panel users-search-panel"><div className="users-filters"><label className="admin-search"><span className="sr-only">Pesquisar pacientes</span><AdminIcon name="search"/><input value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Nome ou e-mail" /></label></div></section>
     <section className="admin-panel users-table-panel"><div className="users-table-wrap"><table className="users-table patients-table"><thead><tr><th>Paciente</th><th>Nutricionista</th><th>Status</th><th>Ações</th></tr></thead><tbody>
       {patients.map(patient => <tr key={patient.id}>

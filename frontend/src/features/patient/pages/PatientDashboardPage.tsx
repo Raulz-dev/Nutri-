@@ -113,14 +113,14 @@ function PatientDashboardContent() {
           </div>
         </header>
 
-        <PatientLinkInvitations />
+        {section === "home" ? <PatientLinkInvitations /> : null}
 
         {section === "home" ? <HomeSection onNavigate={navigateToSection} /> : null}
         {section === "meal-plan" ? <MealPlanSection /> : null}
         {section === "progress" ? <ProgressSection /> : null}
         {section === "messages" ? <MessagesSection /> : null}
         {section === "preferences" ? <PatientPreferencesSection /> : null}
-        {section === "profile" ? <ProfileSection /> : null}
+        {section === "profile" ? <ProfileSection onLogout={handleLogout} /> : null}
       </section>
 
       <nav className="patient-mobile-nav" aria-label="Navegação móvel">

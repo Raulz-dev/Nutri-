@@ -1,8 +1,9 @@
+import { PatientIcon } from "../components/PatientIcon";
 import { PanelHeader } from "../components/PanelHeader";
 import { usePatientData } from "../usePatientData";
 import { usePatientClinical } from "../../care/PatientClinicalContext";
 
-export function ProfileSection() {
+export function ProfileSection({ onLogout }: { onLogout: () => Promise<void> }) {
   const { view: patientData, owner } = usePatientData();
   const clinical = usePatientClinical();
   return (
@@ -22,6 +23,10 @@ export function ProfileSection() {
         <div><dt>Nutricionista responsável</dt><dd>{patientData.nutritionist}</dd></div>
         <div><dt>Próxima consulta</dt><dd>{clinical.appointmentLoading ? "Carregando..." : clinical.appointmentError ? "Indisponível" : patientData.appointment ? `${patientData.appointment.date}, ${patientData.appointment.time}` : "Nenhuma consulta agendada"}</dd></div>
       </dl>
+      <button className="patient-profile-logout" type="button" onClick={onLogout}>
+        <PatientIcon name="logout" />
+        <span>Sair da conta</span>
+      </button>
     </article>
   );
 }

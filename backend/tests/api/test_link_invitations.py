@@ -348,3 +348,95 @@ async def test_concurrent_acceptance_creates_one_active_link():
             )
         ).all()
         assert len(links) == 1
+
+
+async def test_invitation_candidates_search_access_and_eligibility():
+    from tests.api.test_session_account_support import headers, users
+
+    nutri, available, linked, blocked, deactivated = await users(
+        UserRole.NUTRITIONIST,
+        UserRole.PATIENT,
+        UserRole.PATIENT,
+        UserRole.PATIENT,
+        UserRole.PATIENT,
+    )
+    marker = "Busca" + uuid7().hex.translate(str.maketrans("0123456789", "ghijklmnop"))
+    async with AsyncSessionLocal() as db, db.begin():
+        for user in (available, linked, blocked, deactivated):
+            row = await db.get(UserModel, user.id)
+            row.name = marker
+        (await db.get(UserModel, blocked.id)).status = UserStatus.BLOCKED
+        (await db.get(UserModel, deactivated.id)).deactivated_at = utcnow()
+        db.add(
+            CareAssignmentModel(patient_id=linked.id, nutritionist_id=nutri.id, actor_id=nutri.id)
+        )
+    path = "/api/v1/care-link-invitations/candidates"
+    with TestClient(app) as client:
+        auth = headers(client, nutri)
+        result = client.get(path, headers=auth, params={"q": marker}).json()
+        assert result["total"] == 1
+        assert result["items"] == [
+            {"id": str(available.id), "name": marker, "email": available.email}
+        ]
+        assert client.get(path, headers=auth, params={"q": available.email}).json()["total"] == 1
+        assert (
+            client.get(path, headers=auth, params={"q": marker, "offset": 1}).json()["items"] == []
+        )
+        assert client.get(path, headers=headers(client, available)).status_code == 403
+        assert client.get(f"/api/v1/patients/{available.id}", headers=auth).status_code == 403
+        assert (
+            client.post(
+                "/api/v1/care-link-invitations",
+                headers=auth,
+                json={"patient_email": available.email},
+            ).status_code
+            == 201
+        )
+        table = client.get(
+            "/api/v1/patients",
+            headers=auth,
+            params={"q": marker, "include_pending": True, "limit": 1},
+        ).json()
+        assert table["total"] == 2
+        second = client.get(
+            "/api/v1/patients",
+            headers=auth,
+            params={"q": marker, "include_pending": True, "limit": 1, "offset": 1},
+        ).json()
+        assert table["items"][0]["id"] == str(linked.id)
+        assert second["items"][0]["id"] == str(available.id)
+        combined = table["items"] + second["items"]
+        assert {row["id"] for row in combined} == {str(available.id), str(linked.id)}
+        assert next(row for row in combined if row["id"] == str(available.id))["pending_invitation"]
+        assert not next(row for row in combined if row["id"] == str(linked.id))[
+            "pending_invitation"
+        ]
+        assert (
+            client.get("/api/v1/patients", headers=auth, params={"q": marker}).json()["total"] == 1
+        )
+        assert client.get(f"/api/v1/patients/{available.id}", headers=auth).status_code == 403
+
+
+async def test_patient_table_defaults_to_five_rows():
+    from tests.api.test_session_account_support import headers, users
+
+    nutritionist, *patients = await users(UserRole.NUTRITIONIST, *([UserRole.PATIENT] * 6))
+    async with AsyncSessionLocal() as db, db.begin():
+        for patient in patients:
+            db.add(
+                CareAssignmentModel(
+                    patient_id=patient.id,
+                    nutritionist_id=nutritionist.id,
+                    actor_id=nutritionist.id,
+                )
+            )
+    with TestClient(app) as client:
+        auth = headers(client, nutritionist)
+        first = client.get("/api/v1/patients", headers=auth).json()
+        second = client.get("/api/v1/patients?offset=5", headers=auth).json()
+        assert first["limit"] == second["limit"] == 5
+        assert first["total"] == second["total"] == 6
+        assert len(first["items"]) == 5
+        assert len(second["items"]) == 1
+        ids = [row["id"] for row in first["items"] + second["items"]]
+        assert len(set(ids)) == 6

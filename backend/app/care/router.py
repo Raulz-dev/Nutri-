@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.care.interaction_models import AppointmentModel
@@ -33,6 +33,7 @@ class AssignmentResponse(BaseModel):
 
 
 class PatientRow(BaseModel):
+    pending_invitation: bool = False
     id: UUID
     name: str
     email: str
@@ -113,9 +114,10 @@ async def patients(
     actor: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db, scope="function")],
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(5, ge=1, le=100),
     q: str = Query("", max_length=100),
     include_deactivated: bool = False,
+    include_pending: bool = False,
 ):
     if actor.role not in (UserRole.ADMIN, UserRole.NUTRITIONIST):
         raise UserAccessDeniedError("Acesso não autorizado.")
@@ -137,19 +139,55 @@ async def patients(
     if not include_deactivated:
         query = query.where(UserModel.deactivated_at.is_(None))
     if actor.role == UserRole.NUTRITIONIST:
-        query = query.where(CareAssignmentModel.nutritionist_id == actor.id)
+        own_link = CareAssignmentModel.nutritionist_id == actor.id
+        if include_pending:
+            pending = (
+                select(CareLinkInvitationModel.id)
+                .where(
+                    CareLinkInvitationModel.patient_id == UserModel.id,
+                    CareLinkInvitationModel.nutritionist_id == actor.id,
+                    CareLinkInvitationModel.accepted_at.is_(None),
+                    CareLinkInvitationModel.declined_at.is_(None),
+                    CareLinkInvitationModel.canceled_at.is_(None),
+                    CareLinkInvitationModel.expires_at > utcnow(),
+                )
+                .exists()
+            )
+            query = query.where(
+                or_(
+                    own_link,
+                    (
+                        pending
+                        & CareAssignmentModel.id.is_(None)
+                        & (UserModel.status == UserStatus.ACTIVE)
+                    ),
+                )
+            )
+        else:
+            query = query.where(own_link)
     if q.strip():
         term = f"%{q.strip().replace('%', r'\%').replace('_', r'\_')}%"
         query = query.where(
             or_(UserModel.name.ilike(term, escape="\\"), UserModel.email.ilike(term, escape="\\"))
         )
     count = await db.scalar(select(func.count()).select_from(query.subquery()))
+    if actor.role == UserRole.NUTRITIONIST:
+        query = query.order_by(
+            case(
+                (
+                    (CareAssignmentModel.id.is_not(None)) & (UserModel.status == UserStatus.ACTIVE),
+                    0,
+                ),
+                else_=1,
+            )
+        )
     rows = (
         await db.execute(query.order_by(UserModel.name, UserModel.id).offset(offset).limit(limit))
     ).all()
     return PatientList(
         items=[
             PatientRow(
+                pending_invitation=actor.role == UserRole.NUTRITIONIST and link is None,
                 id=u.id,
                 name=u.name,
                 email=u.email,

@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -52,6 +52,54 @@ def to_item(invitation: CareLinkInvitationModel, patient: UserModel, nutritionis
         nutritionist_id=nutritionist.id,
         nutritionist_name=nutritionist.name,
         expires_at=invitation.expires_at,
+    )
+
+
+class InvitationCandidate(BaseModel):
+    id: UUID
+    name: str
+    email: str
+
+
+class InvitationCandidates(BaseModel):
+    items: list[InvitationCandidate]
+    total: int
+
+
+@router.get("/candidates", response_model=InvitationCandidates)
+async def invitation_candidates(
+    actor: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
+    q: str = Query("", max_length=100),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+):
+    if actor.role != UserRole.NUTRITIONIST:
+        raise UserAccessDeniedError("Acesso não autorizado.")
+    linked = (
+        select(CareAssignmentModel.id)
+        .where(
+            CareAssignmentModel.patient_id == UserModel.id,
+            CareAssignmentModel.ended_at.is_(None),
+        )
+        .exists()
+    )
+    query = select(UserModel).where(
+        UserModel.role == UserRole.PATIENT,
+        UserModel.status == UserStatus.ACTIVE,
+        UserModel.deactivated_at.is_(None),
+        ~linked,
+    )
+    if q.strip():
+        term = "%" + q.strip().replace("%", r"\%").replace("_", r"\_") + "%"
+        query = query.where(or_(UserModel.name.ilike(term), UserModel.email.ilike(term)))
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = await db.scalars(
+        query.order_by(UserModel.name, UserModel.id).offset(offset).limit(limit)
+    )
+    return InvitationCandidates(
+        items=[InvitationCandidate(id=row.id, name=row.name, email=row.email) for row in rows],
+        total=total or 0,
     )
 
 

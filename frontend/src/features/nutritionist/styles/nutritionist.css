@@ -321,6 +321,47 @@
   color: #72558b;
   font-size: 12px;
 }
+/* Table actions share one tooltip for mouse and keyboard interaction. */
+.nutri-table-card .nutri-table-action {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #e1d7eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #72558b;
+  vertical-align: middle;
+  text-decoration: none;
+}
+.nutri-table-card .nutri-table-action.danger { color: #a32e2e; }
+.nutri-table-card .nutri-table-action:hover:not(:disabled) { background: #f3edfc; }
+.nutri-table-action:focus-visible { outline: 2px solid #7542ce; outline-offset: 2px; }
+.nutri-table-action[data-tooltip]::after {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  bottom: calc(100% + 7px);
+  width: max-content;
+  max-width: 200px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #403649;
+  color: #fff;
+  content: attr(data-tooltip);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+}
+.nutri-table-action[data-tooltip]:hover::after,
+.nutri-table-action[data-tooltip]:focus-visible::after { opacity: 1; }
+.nutri-table-action:disabled::after { display: none; }
 .nutri-table-card {
   padding: 0;
   overflow: hidden;
@@ -907,3 +948,51 @@
 .nutri-invite-candidates>button[aria-pressed="true"]{border-color:#7141c8;background:#f3edfc}
 .nutri-invite-candidates>button:focus-visible{outline:2px solid #7141c8;outline-offset:2px}
 .nutri-invite-candidates small{color:#776e83}
+
+.nutri-care-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.nutri-care-steps button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid #e1d7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #72558b;
+  text-align: left;
+  font-weight: 600;
+}
+.nutri-care-steps button span {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f3edfc;
+}
+.nutri-care-steps button[aria-current="step"] {
+  border-color: #7542ce;
+  background: #f3edfc;
+  color: #59309e;
+}
+.nutri-care-steps button[aria-current="step"] span {
+  background: #7542ce;
+  color: #fff;
+}
+.nutri-care-steps button:focus-visible,
+.nutri-care-navigation button:focus-visible {
+  outline: 2px solid #7542ce;
+  outline-offset: 2px;
+}
+.nutri-care-navigation { margin-top: 20px; justify-content: space-between; }
+.nutri-care-navigation > span { font-size: 12px; color: #72558b; }
+@media (max-width: 700px) {
+  .nutri-care-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -78,3 +78,14 @@ export const addFollowUp = (token: string, patientId: string, text: string) =>
   apiRequest<ClinicalFollowUp>(`/patients/${patientId}/follow-ups`, {
     method: "POST", token, body: JSON.stringify({ text }),
   });
+
+export const saveMeasurement = (token: string, patientId: string, id: string, data: {
+  measured_on: string; weight_kg: number; body_fat_pct: number | null; note: string;
+}) => apiRequest<ClinicalMeasurement>(`/patients/${patientId}/measurements/${id}`, {
+  method: "PUT", token, body: JSON.stringify(data),
+});
+
+export const saveFollowUp = (token: string, patientId: string, id: string, text: string) =>
+  apiRequest<ClinicalFollowUp>(`/patients/${patientId}/follow-ups/${id}`, {
+    method: "PUT", token, body: JSON.stringify({ text }),
+  });

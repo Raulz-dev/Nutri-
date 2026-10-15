@@ -6,6 +6,7 @@ import { changeAppointmentStatus, listAppointments, type AppointmentRecord } fro
 import { dateLabel } from "../../../lib/formatters";
 import { TablePagination } from "../../../components/shared/TablePagination";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
+import { TableActionIcon } from "../../../components/shared/TableActionIcon";
 import { AppointmentForm } from "../components/AppointmentForm";
 
 const statuses = { scheduled: "Agendada", completed: "Realizada", cancelled: "Cancelada" };
@@ -99,13 +100,16 @@ export function NutritionistAppointmentsPage() {
         <td data-label="Data">{dateLabel(row.date)} · {row.time}</td>
         <td data-label="Modalidade">{row.format}</td>
         <td data-label="Status">{statuses[row.status]}</td>
-        <td><div className="nutri-actions">
-          <button onClick={() => setEditing(row)}>Detalhes / editar</button>
-          {row.status === "scheduled" && <><button disabled={busy} onClick={() => { void change(row, "completed"); }}>Realizada</button><button disabled={busy} onClick={() => { void change(row, "cancelled"); }}>Cancelar</button></>}
+        <td data-label="Ações"><div className="nutri-actions nutri-appointment-actions">
+          <button type="button" className="nutri-table-action" aria-label={row.status === "scheduled" ? "Ver detalhes ou editar consulta" : "Ver detalhes da consulta"} data-tooltip={row.status === "scheduled" ? "Ver detalhes ou editar consulta" : "Ver detalhes da consulta"} onClick={() => setEditing(row)}><TableActionIcon name={row.status === "scheduled" ? "edit" : "view"} /></button>
+          {row.status === "scheduled" && <>
+            <button type="button" className="nutri-table-action" aria-label="Marcar consulta como realizada" data-tooltip="Marcar consulta como realizada" disabled={busy} onClick={() => { void change(row, "completed"); }}><TableActionIcon name="check" /></button>
+            <button type="button" className="nutri-table-action danger" aria-label="Cancelar consulta" data-tooltip="Cancelar consulta" disabled={busy} onClick={() => { void change(row, "cancelled"); }}><TableActionIcon name="cancel" /></button>
+          </>}
         </div></td>
       </tr>)}
       {!rows.length && !loading && !loadError && <tr><td colSpan={5} className="nutri-empty">Nenhuma consulta encontrada.</td></tr>}
-      {loadError && !loading && <tr><td colSpan={5} className="nutri-empty">Não foi possível carregar as consultas. <button type="button" onClick={() => { setLoading(true); void refresh().catch(reason => setLoadError(reason instanceof Error ? reason.message : "Falha ao carregar consultas.")).finally(() => setLoading(false)); }}>Tentar novamente</button></td></tr>}
+      {loadError && !loading && <tr><td colSpan={5} className="nutri-empty">Não foi possível carregar as consultas. <button type="button" className="nutri-table-action" aria-label="Tentar carregar consultas novamente" data-tooltip="Tentar carregar consultas novamente" onClick={() => { setLoading(true); void refresh().catch(reason => setLoadError(reason instanceof Error ? reason.message : "Falha ao carregar consultas.")).finally(() => setLoading(false)); }}><TableActionIcon name="retry" /></button></td></tr>}
       {loading && <tr><td colSpan={5} className="nutri-empty">Carregando consultas...</td></tr>}
     </tbody></table><TablePagination page={page} totalPages={Math.max(1, Math.ceil(total / 10))} onPageChange={setPage} /></section>
     {editing && <AppointmentForm source={editing === "new" ? undefined : editing} defaultPatient={patientId || patients[0]?.id || ""} patients={patients} onClose={() => setEditing(null)} onSaved={saved} />}

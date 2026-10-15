@@ -1,3 +1,4 @@
+import { TableActionIcon } from "../../../components/shared/TableActionIcon";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Modal } from "../components/Modal";
@@ -149,7 +150,7 @@ export function NutritionistPatientsPage() {
             <tr>
               <th>Paciente</th>
               <th>Status</th>
-              <th>Acompanhamento</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -165,8 +166,8 @@ export function NutritionistPatientsPage() {
                   </div>
                 </td>
                 <td data-label="Status">{patient.pending_invitation ? "Pendente" : patient.status === "active" ? "Ativo" : "Bloqueado"}</td>
-                <td>
-                  {patient.pending_invitation ? <span className="nutri-muted">Aguardando aceite</span> : <Link to={`/app/nutricionista/pacientes/${patient.id}`}>Abrir acompanhamento →</Link>}
+                <td data-label="Ações">
+                  {patient.pending_invitation ? <span className="nutri-muted">Aguardando aceite</span> : <Link className="nutri-table-action" aria-label={`Abrir acompanhamento de ${patient.name}`} data-tooltip="Abrir acompanhamento" to={`/app/nutricionista/pacientes/${patient.id}`}><TableActionIcon name="open" /></Link>}
                 </td>
               </tr>
             ))}

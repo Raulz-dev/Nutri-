@@ -39,8 +39,10 @@ export function AppointmentForm({
   );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const readOnly = Boolean(source && source.status !== "scheduled");
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (readOnly || busy) return;
     setBusy(true);
     try {
       if (source) await updateAppointment(session!.accessToken, form);
@@ -56,6 +58,7 @@ export function AppointmentForm({
       onClose={onClose}
     >
       <form className="nutri-form" onSubmit={submit}>
+        {readOnly && <p>Consulta encerrada. Os detalhes estão disponíveis apenas para visualização.</p>}
         <label>
           Paciente
           <select
@@ -75,6 +78,7 @@ export function AppointmentForm({
           <label>
             Data
             <input
+              readOnly={readOnly}
               type="date"
               required
               value={form.date}
@@ -84,6 +88,7 @@ export function AppointmentForm({
           <label>
             Horário
             <input
+              readOnly={readOnly}
               type="time"
               required
               value={form.time}
@@ -94,6 +99,7 @@ export function AppointmentForm({
         <label>
           Modalidade
           <select
+            disabled={readOnly}
             value={form.format}
             onChange={(e) =>
               setForm({
@@ -109,6 +115,7 @@ export function AppointmentForm({
         <label>
           {form.format === "Online" ? "Link da consulta" : "Local da consulta"}
           <input
+            readOnly={readOnly}
             type={form.format === "Online" ? "url" : "text"}
             required
             value={form.location}
@@ -118,6 +125,7 @@ export function AppointmentForm({
         <label>
           Orientações
           <textarea
+            readOnly={readOnly}
             value={form.guidance}
             onChange={(e) => setForm({ ...form, guidance: e.target.value })}
           />
@@ -127,7 +135,7 @@ export function AppointmentForm({
           <button type="button" onClick={onClose}>
             Voltar
           </button>
-          <button className="nutri-primary" disabled={busy || source?.status !== undefined && source.status !== "scheduled"}>Salvar consulta</button>
+          {!readOnly && <button className="nutri-primary" disabled={busy}>Salvar consulta</button>}
         </div>
       </form>
     </Modal>

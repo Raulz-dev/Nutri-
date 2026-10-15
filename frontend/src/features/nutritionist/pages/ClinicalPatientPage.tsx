@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { TablePagination } from "../../../components/shared/TablePagination";
@@ -6,7 +6,7 @@ import { useAuth } from "../../auth/useAuth";
 import { getPatient, type PatientRow } from "../../care/api";
 import { closeMealPlan, listPlanHistory, type MealPlanRecord } from "../../care/meal-plan-api";
 import {
-  addFollowUp, addMeasurement, getIntake, getWeightGoal, listFollowUps,
+  saveFollowUp, saveMeasurement, getIntake, getWeightGoal, listFollowUps,
   listMeasurements, measurementOverview, saveWeightGoal,
   type ClinicalFollowUp, type ClinicalMeasurement, type IntakeRecord, type WeightGoalRecord,
 } from "../../care/clinical-api";
@@ -14,12 +14,20 @@ import { EvolutionChart } from "../../care/EvolutionChart";
 import { dateLabel, today } from "../../../lib/formatters";
 import { PatientPreferences } from "../components/PatientPreferences";
 import { PlanEditor } from "../components/PlanEditor";
+import { useAutoSave } from "../../../hooks/useAutoSave";
 import { Modal } from "../components/Modal";
+
+const steps = ["Rotina", "Evolução", "Plano alimentar", "Avaliação"];
 
 export function ClinicalPatientPage() {
   const { patientId = "" } = useParams();
+  return <ClinicalPatientContent key={patientId} patientId={patientId} />;
+}
+
+function ClinicalPatientContent({ patientId }: { patientId: string }) {
   const { session } = useAuth();
   const token = session?.accessToken ?? "";
+  const [step, setStep] = useState(0);
   const [patient, setPatient] = useState<PatientRow | null>(null);
   const [intake, setIntake] = useState<IntakeRecord | null>(null);
   const [measurements, setMeasurements] = useState<ClinicalMeasurement[]>([]);
@@ -41,6 +49,9 @@ export function ClinicalPatientPage() {
   const [bodyFat, setBodyFat] = useState("");
   const [measurementNote, setMeasurementNote] = useState("");
   const [assessment, setAssessment] = useState("");
+  const [measurementId, setMeasurementId] = useState(() => crypto.randomUUID());
+  const [assessmentId, setAssessmentId] = useState(() => crypto.randomUUID());
+  const goalRevision = useRef(0);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [planLoading, setPlanLoading] = useState(true);
@@ -53,6 +64,7 @@ export function ClinicalPatientPage() {
 
   useEffect(() => {
     goalDraftDirty.current = false;
+    setStep(0);
   }, [patientId]);
 
   const load = useCallback(async (measurementPageNumber: number, assessmentPageNumber: number) => {
@@ -67,6 +79,7 @@ export function ClinicalPatientPage() {
     setPatient(person);
     setIntake(preferences);
     setGoal(weightGoal);
+    goalRevision.current = Math.max(goalRevision.current, weightGoal.revision);
     if (!goalDraftDirty.current) setGoalValue(weightGoal.target_kg?.toString() ?? "");
     setMeasurements(measured.items);
     setMeasurementTotal(measured.total);
@@ -113,62 +126,43 @@ export function ClinicalPatientPage() {
     weight: row.weight_kg, bodyFat: row.body_fat_pct, note: row.note,
   })), [recentMeasurements]);
 
-  async function submitMeasurement(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true); setError("");
-    try {
-      await addMeasurement(token, patientId, {
+  const validDecimal = (value: string, min: number, max: number) =>
+    value.trim() !== "" && /^\d+(?:\.\d)?$/.test(value) && Number(value) >= min && Number(value) <= max;
+  const measurementValid = Boolean(date) && date <= today() && validDecimal(weight, 0.1, 500)
+    && (!bodyFat || validDecimal(bodyFat, 0, 100));
+  const measurementSave = useAutoSave(
+    measurementValid ? JSON.stringify([measurementId, date, weight, bodyFat, measurementNote]) : null,
+    async () => {
+      await saveMeasurement(token, patientId, measurementId, {
         measured_on: date, weight_kg: Number(weight),
         body_fat_pct: bodyFat ? Number(bodyFat) : null, note: measurementNote,
       });
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Não foi possível registrar a medição.");
-      setBusy(false);
-      return;
-    }
-    setWeight(""); setBodyFat(""); setMeasurementNote("");
-    showSuccess("Medição registrada no histórico.");
-    setMeasurementPage(1);
-    try {
-      await load(1, assessmentPage);
-    } catch {
-      setError("Medição salva, mas não foi possível atualizar o histórico. Recarregue a página.");
-    } finally { setBusy(false); }
-  }
-
-  async function submitAssessment(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true); setError("");
-    try {
-      await addFollowUp(token, patientId, assessment);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Não foi possível registrar a avaliação.");
-      setBusy(false);
-      return;
-    }
-    setAssessment("");
-    showSuccess("Avaliação registrada no histórico.");
-    setAssessmentPage(1);
-    try {
-      await load(measurementPage, 1);
-    } catch {
-      setError("Avaliação salva, mas não foi possível atualizar o histórico. Recarregue a página.");
-    } finally { setBusy(false); }
-  }
-
-  async function submitGoal(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true); setError("");
-    try {
-      const saved = await saveWeightGoal(token, patientId, Number(goalValue), goal?.revision ?? 0);
-      goalDraftDirty.current = false;
+      const [result, overview] = await Promise.all([
+        listMeasurements(token, patientId, (measurementPage - 1) * 10),
+        measurementOverview(token, patientId),
+      ]);
+      setMeasurements(result.items);
+      setMeasurementTotal(result.total);
+      setRecentMeasurements(overview.recent);
+    },
+  );
+  const assessmentSave = useAutoSave(
+    assessment.trim() ? JSON.stringify([assessmentId, assessment]) : null,
+    async () => {
+      await saveFollowUp(token, patientId, assessmentId, assessment);
+      const result = await listFollowUps(token, patientId, (assessmentPage - 1) * 10);
+      setFollowUps(result.items);
+      setFollowUpTotal(result.total);
+    },
+  );
+  const goalSave = useAutoSave(
+    goalDraftDirty.current && validDecimal(goalValue, 0.1, 500) ? goalValue : null,
+    async () => {
+      const saved = await saveWeightGoal(token, patientId, Number(goalValue), goalRevision.current);
+      goalRevision.current = saved.revision;
       setGoal(saved);
-      setGoalValue(saved.target_kg?.toString() ?? "");
-      showSuccess("Meta de peso salva na plataforma.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Não foi possível salvar a meta.");
-    } finally { setBusy(false); }
-  }
+    },
+  );
 
   function refreshPlans() {
     if (planPage !== 1) {
@@ -212,19 +206,53 @@ export function ClinicalPatientPage() {
         <Link to={`/app/nutricionista/pacientes/${patientId}/previa`}>Abrir prévia somente leitura →</Link>
       </header>
 
-      <section className="nutri-card">
-        <h2>Avaliações</h2>
-        <form className="nutri-form" onSubmit={submitAssessment}>
-          <label>Nova avaliação<textarea value={assessment} onChange={event => setAssessment(event.target.value)} required maxLength={4000} /></label>
-          <button className="nutri-primary" type="submit" disabled={busy || !assessment.trim()}>Salvar avaliação</button>
-        </form>
-        {followUps.map(row => <article className="nutri-record" key={row.id}>
-          <small>{new Date(row.created_at).toLocaleString("pt-BR")} · {row.author_name}</small><p>{row.text}</p>
-        </article>)}
-        {!followUpTotal && <p className="nutri-empty">Nenhuma avaliação registrada.</p>}
-        <TablePagination page={assessmentPage} totalPages={Math.max(1, Math.ceil(followUpTotal / 10))} onPageChange={setAssessmentPage} />
-      </section>
+      <nav className="nutri-care-steps" aria-label="Etapas do acompanhamento">
+        {steps.map((label, index) => <button
+          key={label}
+          type="button"
+          aria-current={step === index ? "step" : undefined}
+          aria-controls={`care-step-${index}`}
+          onClick={() => setStep(index)}
+        ><span aria-hidden="true">{index + 1}</span>{label}</button>)}
+      </nav>
+      <div id="care-step-0" hidden={step !== 0} role="region" aria-label="1. Rotina">
       {intake?.intake ? <PatientPreferences intake={intake.intake} /> : <section className="nutri-card"><h2>Preferências e rotina</h2><p>O paciente ainda não preencheu as preferências.</p></section>}
+      </div>
+      <div id="care-step-1" hidden={step !== 1} role="region" aria-label="2. Evolução">
+      <section className="nutri-card">
+        <h2>Evolução</h2>
+        <form className="nutri-form" onSubmit={event => { event.preventDefault(); void goalSave.flush(); }} onBlur={() => { void goalSave.flush(); }}>
+          <h3>Meta de peso</h3>
+          <label>Meta (kg)<input type="number" min="0.1" max="500" step="0.1" required value={goalValue} onChange={event => { goalDraftDirty.current = true; setGoalValue(event.target.value); }} /></label>
+          {goal?.author_name && <p>Última definição por {goal.author_name}.</p>}
+          <AutoSaveStatus state={goalSave} />
+        </form>
+        <EvolutionChart measurements={chartMeasurements} />
+        <form className="nutri-form" onSubmit={event => { event.preventDefault(); void measurementSave.flush(); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) void measurementSave.flush(); }}>
+          <h3>Registrar medição</h3>
+          <div className="nutri-form-grid">
+            <label>Data<input type="date" required max={today()} value={date} onChange={event => setDate(event.target.value)} /></label>
+            <label>Peso (kg)<input type="number" min="0.1" max="500" step="0.1" required value={weight} onChange={event => setWeight(event.target.value)} /></label>
+            <label>Gordura corporal (%)<input type="number" min="0" max="100" step="0.1" value={bodyFat} onChange={event => setBodyFat(event.target.value)} /></label>
+            <label>Observação<input maxLength={2000} value={measurementNote} onChange={event => setMeasurementNote(event.target.value)} /></label>
+          </div>
+          <AutoSaveStatus state={measurementSave} />
+          {measurementSave.status === "saved" && <button type="button" onClick={() => {
+            setMeasurementId(crypto.randomUUID()); setWeight(""); setBodyFat(""); setMeasurementNote(""); setDate(today());
+          }}>Nova medição</button>}
+        </form>
+        <div className="nutri-table-card"><table><thead><tr><th>Data</th><th>Peso</th><th>Gordura</th><th>Observação / autor</th></tr></thead><tbody>
+          {measurements.map(row => <tr key={row.id}>
+            <td data-label="Data">{dateLabel(row.measured_on)}</td>
+            <td data-label="Peso">{row.weight_kg.toLocaleString("pt-BR")} kg</td>
+            <td data-label="Gordura">{row.body_fat_pct === null ? "—" : `${row.body_fat_pct.toLocaleString("pt-BR")}%`}</td>
+            <td data-label="Registro">{row.note || "—"}<small>{row.author_name}</small></td>
+          </tr>)}
+          {!measurementTotal && <tr><td colSpan={4} className="nutri-empty">Nenhuma medição registrada.</td></tr>}
+        </tbody></table><TablePagination page={measurementPage} totalPages={Math.max(1, Math.ceil(measurementTotal / 10))} onPageChange={setMeasurementPage} /></div>
+      </section>
+      </div>
+      <div id="care-step-2" hidden={step !== 2} role="region" aria-label="3. Plano alimentar">
       <section className="nutri-card">
         <header><h2>Planos alimentares</h2><button className="nutri-primary" type="button" onClick={() => setEditor("new")}>Criar plano</button></header>
         {planLoading && <p className="nutri-muted">Carregando planos...</p>}
@@ -252,35 +280,29 @@ export function ClinicalPatientPage() {
         {!planLoading && !planError && !planTotal && <p className="nutri-empty">Nenhum plano alimentar criado.</p>}
         <TablePagination page={planPage} totalPages={Math.max(1, Math.ceil(planTotal / 10))} onPageChange={setPlanPage} />
       </section>
+      </div>
+      <div id="care-step-3" hidden={step !== 3} role="region" aria-label="4. Avaliação">
       <section className="nutri-card">
-        <h2>Evolução</h2>
-        <form className="nutri-form" onSubmit={submitGoal}>
-          <h3>Meta de peso</h3>
-          <label>Meta (kg)<input type="number" min="0.1" max="500" step="0.1" required value={goalValue} onChange={event => { goalDraftDirty.current = true; setGoalValue(event.target.value); }} /></label>
-          {goal?.author_name && <p>Última definição por {goal.author_name}.</p>}
-          <button className="nutri-primary" type="submit" disabled={busy}>Salvar meta</button>
+        <h2>Avaliações</h2>
+        <form className="nutri-form" onSubmit={event => { event.preventDefault(); void assessmentSave.flush(); }} onBlur={() => { void assessmentSave.flush(); }}>
+          <label>Nova avaliação<textarea value={assessment} onChange={event => setAssessment(event.target.value)} required maxLength={4000} /></label>
+          <AutoSaveStatus state={assessmentSave} />
+          {assessmentSave.status === "saved" && <button type="button" onClick={() => {
+            setAssessmentId(crypto.randomUUID()); setAssessment("");
+          }}>Nova avaliação</button>}
         </form>
-        <EvolutionChart measurements={chartMeasurements} />
-        <form className="nutri-form" onSubmit={submitMeasurement}>
-          <h3>Registrar medição</h3>
-          <div className="nutri-form-grid">
-            <label>Data<input type="date" required max={today()} value={date} onChange={event => setDate(event.target.value)} /></label>
-            <label>Peso (kg)<input type="number" min="0.1" max="500" step="0.1" required value={weight} onChange={event => setWeight(event.target.value)} /></label>
-            <label>Gordura corporal (%)<input type="number" min="0" max="100" step="0.1" value={bodyFat} onChange={event => setBodyFat(event.target.value)} /></label>
-            <label>Observação<input maxLength={2000} value={measurementNote} onChange={event => setMeasurementNote(event.target.value)} /></label>
-          </div>
-          <button className="nutri-primary" type="submit" disabled={busy}>Salvar medição</button>
-        </form>
-        <div className="nutri-table-card"><table><thead><tr><th>Data</th><th>Peso</th><th>Gordura</th><th>Observação / autor</th></tr></thead><tbody>
-          {measurements.map(row => <tr key={row.id}>
-            <td data-label="Data">{dateLabel(row.measured_on)}</td>
-            <td data-label="Peso">{row.weight_kg.toLocaleString("pt-BR")} kg</td>
-            <td data-label="Gordura">{row.body_fat_pct === null ? "—" : `${row.body_fat_pct.toLocaleString("pt-BR")}%`}</td>
-            <td data-label="Registro">{row.note || "—"}<small>{row.author_name}</small></td>
-          </tr>)}
-          {!measurementTotal && <tr><td colSpan={4} className="nutri-empty">Nenhuma medição registrada.</td></tr>}
-        </tbody></table><TablePagination page={measurementPage} totalPages={Math.max(1, Math.ceil(measurementTotal / 10))} onPageChange={setMeasurementPage} /></div>
+        {followUps.map(row => <article className="nutri-record" key={row.id}>
+          <small>{new Date(row.created_at).toLocaleString("pt-BR")} · {row.author_name}</small><p>{row.text}</p>
+        </article>)}
+        {!followUpTotal && <p className="nutri-empty">Nenhuma avaliação registrada.</p>}
+        <TablePagination page={assessmentPage} totalPages={Math.max(1, Math.ceil(followUpTotal / 10))} onPageChange={setAssessmentPage} />
       </section>
+      </div>
+      <div className="nutri-actions nutri-care-navigation">
+        <button type="button" disabled={step === 0} onClick={() => setStep(current => current - 1)}>Anterior</button>
+        <span>Etapa {step + 1} de {steps.length}</span>
+        {step < steps.length - 1 && <button type="button" onClick={() => setStep(current => current + 1)}>Próxima: {steps[step + 1]}</button>}
+      </div>
     </>}
     {editor && <PlanEditor patientId={patientId} source={editor === "new" ? undefined : editor} onClose={() => setEditor(null)} onSaved={refreshPlans} />}
     {closing && <Modal title="Encerrar plano alimentar" onClose={() => { if (!busy) setClosing(null); }}>
@@ -288,4 +310,12 @@ export function ClinicalPatientPage() {
       <div className="nutri-actions"><button type="button" disabled={busy} onClick={() => setClosing(null)}>Cancelar</button><button className="nutri-primary" type="button" disabled={busy} onClick={confirmClosePlan}>Confirmar encerramento</button></div>
     </Modal>}
   </>;
+}
+
+function AutoSaveStatus({ state }: { state: ReturnType<typeof useAutoSave> }) {
+  return <div>
+    <p role="status" className="nutri-muted">{state.status === "saving" ? "Salvando…" : state.status === "saved" ? "Salvo automaticamente." : state.status === "pending" ? "Alterações aguardando salvamento…" : state.status === "error" ? "Não foi possível salvar. Seus dados continuam no formulário." : "Preencha os campos para salvar automaticamente."}</p>
+    <ErrorToast message={state.error} />
+    {state.status === "error" && <button type="button" onClick={() => { void state.flush(); }}>Tentar novamente</button>}
+  </div>;
 }

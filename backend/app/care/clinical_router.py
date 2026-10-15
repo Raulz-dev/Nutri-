@@ -481,3 +481,54 @@ async def add_follow_up(
     await db.flush()
     audit(db, "record_follow_up", "follow_up_note", row.id, patient_id=str(patient_id))
     return FollowUpResponse.model_validate(row, from_attributes=True)
+
+
+@router.put("/patients/{patient_id}/measurements/{record_id}", response_model=MeasurementResponse)
+async def save_measurement(
+    patient_id: UUID,
+    record_id: UUID,
+    data: MeasurementCreate,
+    actor: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
+):
+    nutritionist = await clinical_writer(db, actor, patient_id)
+    row = await db.get(MeasurementModel, record_id)
+    if row and (row.patient_id != patient_id or row.author_id != actor.id):
+        raise HTTPException(404, "Medição não encontrada.")
+    action = "update_measurement" if row else "record_measurement"
+    if row is None:
+        row = MeasurementModel(
+            id=record_id, patient_id=patient_id, author_id=actor.id, author_name=nutritionist.name
+        )
+        db.add(row)
+    row.measured_on = data.measured_on
+    row.weight_kg = data.weight_kg
+    row.body_fat_pct = data.body_fat_pct
+    row.note = data.note.strip()
+    await db.flush()
+    audit(db, action, "measurement", row.id, patient_id=str(patient_id))
+    return MeasurementResponse.model_validate(row, from_attributes=True)
+
+
+@router.put("/patients/{patient_id}/follow-ups/{record_id}", response_model=FollowUpResponse)
+async def save_follow_up(
+    patient_id: UUID,
+    record_id: UUID,
+    data: FollowUpCreate,
+    actor: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
+):
+    nutritionist = await clinical_writer(db, actor, patient_id)
+    row = await db.get(FollowUpModel, record_id)
+    if row and (row.patient_id != patient_id or row.author_id != actor.id):
+        raise HTTPException(404, "Avaliação não encontrada.")
+    action = "update_follow_up" if row else "record_follow_up"
+    if row is None:
+        row = FollowUpModel(
+            id=record_id, patient_id=patient_id, author_id=actor.id, author_name=nutritionist.name
+        )
+        db.add(row)
+    row.text = data.text
+    await db.flush()
+    audit(db, action, "follow_up_note", row.id, patient_id=str(patient_id))
+    return FollowUpResponse.model_validate(row, from_attributes=True)

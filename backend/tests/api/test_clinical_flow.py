@@ -336,3 +336,67 @@ async def test_clinical_history_authorship_and_transfer():
         assert all(
             "Avaliação profissional inicial." not in str(event.event_data) for event in events
         )
+
+
+@pytest.mark.asyncio
+async def test_autosave_updates_same_record_and_checks_authorization():
+    from app.care.models import CareAssignmentModel
+
+    password = "TestPassword123!"
+    nutritionist, patient, stranger = [
+        UserModel(
+            id=uuid7(),
+            name=name,
+            email=f"autosave-{uuid7()}@example.com",
+            password_hash=PasswordHasher().hash(password),
+            role=role,
+            status=UserStatus.ACTIVE,
+        )
+        for name, role in [
+            ("Nutri Auto", UserRole.NUTRITIONIST),
+            ("Paciente Auto", UserRole.PATIENT),
+            ("Outra Nutri", UserRole.NUTRITIONIST),
+        ]
+    ]
+    async with AsyncSessionLocal() as db, db.begin():
+        db.add_all([nutritionist, patient, stranger])
+        await db.flush()
+        db.add(
+            CareAssignmentModel(
+                patient_id=patient.id, nutritionist_id=nutritionist.id, actor_id=nutritionist.id
+            )
+        )
+    with TestClient(app) as client:
+
+        def auth(user):
+            response = client.post(
+                "/api/v1/auth/login", json={"email": user.email, "password": password}
+            )
+            assert response.status_code == 200, response.text
+            return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+        headers, patient_headers, other_headers = auth(nutritionist), auth(patient), auth(stranger)
+        for resource, initial, changed in [
+            (
+                "measurements",
+                {"measured_on": date.today().isoformat(), "weight_kg": 72},
+                {"measured_on": date.today().isoformat(), "weight_kg": 71.5, "note": "Atualizada"},
+            ),
+            ("follow-ups", {"text": "Avaliação inicial"}, {"text": "Avaliação completa"}),
+        ]:
+            record_id = uuid7()
+            base = f"/api/v1/patients/{patient.id}/{resource}"
+            url = f"{base}/{record_id}"
+            for data in [initial, changed, changed]:
+                response = client.put(url, headers=headers, json=data)
+                assert response.status_code == 200, response.text
+                assert response.json()["id"] == str(record_id)
+                assert response.json()["author_id"] == str(nutritionist.id)
+            listing = client.get(base, headers=headers).json()
+            assert listing["total"] == 1
+            for key, value in changed.items():
+                assert listing["items"][0][key] == value
+            assert client.put(url, headers=patient_headers, json=changed).status_code == 403
+            assert client.put(url, headers=other_headers, json=changed).status_code == 403
+            invalid = {**changed, "weight_kg": 0} if resource == "measurements" else {"text": " "}
+            assert client.put(url, headers=headers, json=invalid).status_code == 422

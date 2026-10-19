@@ -21,7 +21,7 @@ export function PatientPreferences({ intake }: { intake: PatientIntake }) {
                           ? v
                             ? "Sim"
                             : "Não"
-                          : (goalLabels[String(v)] ?? String(v)) ||
+                          : (optionLabels[key]?.[String(v)] ?? String(v)) ||
                             "Não informado"}
                     </dd>
                   </div>
@@ -46,6 +46,14 @@ export const goalLabels: Record<string, string> = {
   vegetarian: "Vegetariano",
   vegan: "Vegano",
   pescatarian: "Pescetariano",
+};
+const optionLabels: Record<string, Record<string, string>> = {
+  primary: goalLabels,
+  pattern: goalLabels,
+  eatingOutFrequency: { never: "Nunca ou raramente", "1-2": "1 a 2 vezes por semana", "3-5": "3 a 5 vezes por semana", daily: "Todos os dias" },
+  activityFrequency: { none: "Não pratica", "1-2": "1 a 2 vezes por semana", "3-4": "3 a 4 vezes por semana", "5-plus": "5 vezes ou mais por semana" },
+  alcohol: { none: "Não consome", occasional: "Ocasionalmente", weekly: "Semanalmente", daily: "Diariamente" },
+  smoking: { never: "Nunca fumou", former: "Ex-fumante", current: "Fumante" },
 };
 const labels: Record<string, string> = {
   goal: "Objetivo",

@@ -1,4 +1,5 @@
 import { SupportPanel } from "../features/care/SupportPanel";
+import { LandingPage } from "../features/landing/LandingPage";
 import { NutritionistRoute } from "../routes/NutritionistRoute";
 import { NutritionistLayout } from "../features/nutritionist/layouts/NutritionistLayout";
 import { NutritionistDashboardPage } from "../features/nutritionist/pages/DashboardPage";
@@ -30,6 +31,7 @@ import { PatientRoute } from "../routes/PatientRoute";
 export function AppRouter() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
       <Route path="/redefinir-senha" element={<ResetPasswordPage />} />

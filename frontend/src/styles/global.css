@@ -212,13 +212,17 @@ h1 {
 }
 
 .password-field .field input {
-  padding-right: 74px;
+  padding-right: 52px;
 }
 
 .password-field__toggle {
   position: absolute;
-  top: 37px;
-  right: 14px;
+  bottom: 0;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 50px;
   padding: 0;
   color: var(--primary);
   background: transparent;
@@ -226,6 +230,12 @@ h1 {
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
+}
+
+.password-field__toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -5px;
+  border-radius: 10px;
 }
 
 .login-form__options {
@@ -491,7 +501,7 @@ h1 {
   }
 
   .password-field__toggle {
-    top: 33px;
+    height: 46px;
   }
 
   .login-form__options {

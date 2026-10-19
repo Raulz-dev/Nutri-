@@ -10,6 +10,8 @@ import { useAuth } from "../auth/useAuth";
 import { ErrorToast } from "../../components/ui/ErrorToast";
 import "../patient/styles/patient.css";
 import "./support.css";
+import { mergeMessages } from "./message-history";
+import { useVisiblePolling } from "../../hooks/useVisiblePolling";
 
 type Contact = { id: string; name: string; active: boolean; unread: number };
 type Message = {
@@ -139,16 +141,7 @@ function SupportConversation({
         `${base}/messages${before ? `?before=${before}` : ""}`,
         { token },
       );
-      setMessages((current) =>
-        [
-          ...new Map(
-            [...current, ...page.items].map((item) => [item.id, item]),
-          ).values(),
-        ].sort(
-          (a, b) =>
-            a.sent_at.localeCompare(b.sent_at) || a.id.localeCompare(b.id),
-        ),
-      );
+      setMessages((current) => mergeMessages(current, page.items));
       if (before || !initialized.current) {
         initialized.current = true;
         setCursor(page.next_cursor);
@@ -167,15 +160,17 @@ function SupportConversation({
     },
     [base, token, currentUser, onRead],
   );
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === "visible")
-        void load().catch((reason) => setError(reason.message));
-    };
-    refresh();
-    const interval = window.setInterval(refresh, 10000);
-    return () => window.clearInterval(interval);
-  }, [load]);
+  useVisiblePolling(
+    load,
+    (reason) => {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Falha ao atualizar mensagens.",
+      );
+    },
+    true,
+  );
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!draft.trim() || busy) return;
@@ -233,10 +228,17 @@ function SupportConversation({
             Mensagem
           </label>
           <textarea
-            onKeyDown={event => {
-              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+            onKeyDown={(event) => {
+              if (
+                event.key !== "Enter" ||
+                event.shiftKey ||
+                event.nativeEvent.isComposing ||
+                event.nativeEvent.keyCode === 229
+              )
+                return;
               event.preventDefault();
-              if (!event.repeat && !busy && draft.trim()) event.currentTarget.form?.requestSubmit();
+              if (!event.repeat && !busy && draft.trim())
+                event.currentTarget.form?.requestSubmit();
             }}
             id="support-draft"
             maxLength={4000}

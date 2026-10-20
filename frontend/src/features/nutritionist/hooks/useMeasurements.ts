@@ -4,6 +4,7 @@ import { today } from "../../../lib/formatters";
 import {
   listMeasurements,
   saveMeasurement,
+  toMeasurement,
   type ClinicalMeasurement,
 } from "../../care/clinical-api";
 import { useClinicalHistory } from "./useClinicalHistory";
@@ -82,16 +83,7 @@ export function useMeasurements(token: string, patientId: string) {
     setNote("");
   }
 
-  const chartMeasurements = [...recent].reverse().map((row) => ({
-    id: row.id,
-    patientId: row.patient_id,
-    authorId: row.author_id,
-    authorName: row.author_name,
-    date: row.measured_on,
-    weight: row.weight_kg,
-    bodyFat: row.body_fat_pct,
-    note: row.note,
-  }));
+  const chartMeasurements = [...recent].reverse().map(toMeasurement);
 
   return {
     history,

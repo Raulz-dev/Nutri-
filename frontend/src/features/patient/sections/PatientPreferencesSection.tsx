@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { type PatientIntake, emptyPatientIntake } from "../patient-intake";
+import { type PatientIntake, emptyPatientIntake } from "../../care/patient-intake";
 import { usePatientData } from "../usePatientData";
 import { useAuth } from "../../auth/useAuth";
 import { useErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";

@@ -17,8 +17,6 @@ export const getAdminDashboard = (token: string) => apiRequest<AdminDashboard>("
 export type NutritionistPlanSummary = { as_of: string; active_plans: number; patients_without_plan: number; pending_patients: { id: string; name: string }[] };
 export const getNutritionistPlanSummary = (token: string) => apiRequest<NutritionistPlanSummary>("/dashboards/nutritionist/plans", { token });
 
-export const listUsers = (token: string, offset = 0, limit = 100) =>
-  apiRequest<Page<User>>(`/users?offset=${offset}&limit=${limit}`, { token });
 export const listPatients = (token: string, offset = 0, q = "", includeDeactivated = false, includePending = false, limit = 10) =>
   apiRequest<Page<PatientRow>>(`/patients?offset=${offset}&limit=${limit}&q=${encodeURIComponent(q)}${includeDeactivated ? "&include_deactivated=true" : ""}${includePending ? "&include_pending=true" : ""}`, { token });
 export const getPatient = (token: string, id: string) =>
@@ -48,18 +46,6 @@ export const listInvitationStatuses = (token: string) =>
 export const acceptInvitation = (token: string, password: string, passwordConfirmation: string) =>
   apiRequest<User>("/auth/invitations/accept", { method: "POST",
     body: JSON.stringify({ token, password, password_confirmation: passwordConfirmation }) });
-export const updateUser = (token: string, id: string, data: { name?: string; email?: string; status?: "active" | "blocked" }) =>
-  apiRequest<User>(`/users/${id}`, { method: "PATCH", token, body: JSON.stringify(data) });
-export const deactivateUser = (token: string, id: string) =>
-  apiRequest<void>(`/users/${id}`, { method: "DELETE", token });
-export async function listAllUsers(token: string) {
-  const users: User[] = [];
-  for (let offset = 0;; offset += 100) {
-    const page = await listUsers(token, offset, 100);
-    users.push(...page.items);
-    if (users.length >= page.total || page.items.length === 0) return users;
-  }
-}
 export type AuditEvent = { id: string; action: string; entity_type: string; entity_id: string | null; target_name: string | null; actor_name: string | null; event_data: Record<string,string>; created_at: string };
 export const listAudit = (token: string, offset = 0, action = "") =>
   apiRequest<Page<AuditEvent>>(`/admin/audit-events?offset=${offset}&limit=10${action ? `&action=${encodeURIComponent(action)}` : ""}`, { token });

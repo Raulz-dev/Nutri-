@@ -1,5 +1,6 @@
 import { apiRequest } from "../../lib/http-client";
-import type { PatientIntake } from "../patient/patient-intake";
+import type { PatientIntake } from "./patient-intake";
+import type { Measurement } from "./types";
 import type { Page } from "./api";
 
 export type IntakeRecord = {
@@ -28,6 +29,14 @@ export type ClinicalMeasurement = {
   note: string;
   created_at: string;
 };
+
+export function toMeasurement(row: ClinicalMeasurement): Measurement {
+  return {
+    id: row.id, patientId: row.patient_id, authorId: row.author_id,
+    authorName: row.author_name, date: row.measured_on,
+    weight: row.weight_kg, bodyFat: row.body_fat_pct, note: row.note,
+  };
+}
 
 export type ClinicalFollowUp = {
   id: string;

@@ -1,4 +1,4 @@
-import type { PatientIntake } from "../../patient/patient-intake";
+import type { PatientIntake } from "../../care/patient-intake";
 export function PatientPreferences({ intake }: { intake: PatientIntake }) {
   return (
     <section className="nutri-card">

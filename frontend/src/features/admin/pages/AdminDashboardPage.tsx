@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { initials } from "../../../lib/formatters";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
 import { getAdminDashboard, type AdminDashboard } from "../../care/api";
@@ -123,5 +124,3 @@ function formatRelativeAccess(value: string | null) {
   if (days === 1) return "Ontem";
   return `Há ${days} dias`;
 }
-
-function initials(name: string) { return name.split(" ").slice(0, 2).map((part) => part[0]).join("").toUpperCase(); }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { getPatient, type PatientRow } from "../../care/api";
-import { getIntake, measurementOverview, type ClinicalMeasurement, type IntakeRecord } from "../../care/clinical-api";
+import { getIntake, measurementOverview, toMeasurement, type ClinicalMeasurement, type IntakeRecord } from "../../care/clinical-api";
 import { EvolutionChart } from "../../care/EvolutionChart";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { PatientPreferences } from "../components/PatientPreferences";
@@ -28,11 +28,7 @@ export function ReadOnlyPatientPreview() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [token, patientId]);
-  const chartMeasurements = useMemo(() => [...measurements].reverse().map(row => ({
-    id: row.id, patientId: row.patient_id, authorId: row.author_id,
-    authorName: row.author_name, date: row.measured_on,
-    weight: row.weight_kg, bodyFat: row.body_fat_pct, note: row.note,
-  })), [measurements]);
+  const chartMeasurements = useMemo(() => [...measurements].reverse().map(toMeasurement), [measurements]);
   return <main className="patient-app"><section className="nutri-card" style={{margin:"auto",maxWidth:900}}>
     <Link to={`/app/nutricionista/pacientes/${patientId}`}>← Voltar ao acompanhamento</Link>
     <ErrorToast message={error} />

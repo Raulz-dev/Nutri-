@@ -4,17 +4,9 @@ import { getPatient, type PatientRow } from "./api";
 import { getCurrentPlan, type MealPlanRecord } from "./meal-plan-api";
 import { getNextAppointment, type AppointmentRecord } from "./interaction-api";
 import {
-  getIntake, getWeightGoal, measurementOverview,
-  type ClinicalMeasurement, type IntakeRecord, type WeightGoalRecord,
+  getIntake, getWeightGoal, measurementOverview, toMeasurement,
+  type IntakeRecord, type WeightGoalRecord,
 } from "./clinical-api";
-
-function toMeasurement(row: ClinicalMeasurement): Measurement {
-  return {
-    id: row.id, patientId: row.patient_id, authorId: row.author_id,
-    authorName: row.author_name, date: row.measured_on,
-    weight: row.weight_kg, bodyFat: row.body_fat_pct, note: row.note,
-  };
-}
 
 type PatientClinicalState = {
   patient: PatientRow | null;

@@ -3,7 +3,7 @@ import { useAuth } from "../../auth/useAuth";
 import { ErrorToast } from "../../../components/ui/ErrorToast";
 import { listAudit, type AuditEvent } from "../../care/api";
 import { AdminShell } from "../AdminShell";
-import { TablePagination } from "../components/TablePagination";
+import { TablePagination } from "../../../components/shared/TablePagination";
 
 const labels: Record<string,string> = {
   create: "Cadastro", invite: "Convite", resend_invitation: "Reenvio", accept_invitation: "Primeiro acesso",

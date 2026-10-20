@@ -8,8 +8,8 @@ import type { User } from "../../users/types";
 import { AdminIcon, AdminShell } from "../AdminShell";
 import { ConfirmModal } from "../components/users/ConfirmModal";
 import { InviteNutritionistModal } from "../components/users/InviteNutritionistModal";
-import { TablePagination } from "../components/TablePagination";
-import { usePagination } from "../hooks/usePagination";
+import { TablePagination } from "../../../components/shared/TablePagination";
+import { usePagination } from "../../../hooks/usePagination";
 
 export function AdminNutritionistsPage() {
   const { session } = useAuth();

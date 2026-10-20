@@ -1,3 +1,4 @@
+import "./conversation.css";
 import { useCallback, useRef, useState, type FormEvent } from "react";
 import { apiRequest } from "../../lib/http-client";
 import { useAuth } from "../auth/useAuth";

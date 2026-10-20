@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiRequest } from "../../lib/http-client";
 import { useAuth } from "../auth/useAuth";
 import { ErrorToast } from "../../components/ui/ErrorToast";
-import "../patient/styles/patient.css";
 import "./support.css";
 import { SupportConversation, type SupportContact } from "./SupportConversation";
 

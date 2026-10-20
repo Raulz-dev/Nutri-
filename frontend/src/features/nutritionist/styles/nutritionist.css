@@ -708,17 +708,6 @@
 .nutri-chat > section {
   min-width: 0;
 }
-.shared-conversation {
-  display: grid;
-  grid-template-rows: auto minmax(180px, 1fr) auto;
-  height: 600px;
-  max-height: 75dvh;
-  min-width: 0;
-  overflow: hidden;
-}
-.shared-conversation .chat-history {
-  overflow: auto;
-}
 .nutri-chat-back {
   display: none;
 }
@@ -906,10 +895,6 @@
     background: white;
     color: #7542ce;
     border: 0;
-  }
-  .shared-conversation {
-    height: 65dvh;
-    max-height: none;
   }
   .nutri-card > header {
     flex-wrap: wrap;

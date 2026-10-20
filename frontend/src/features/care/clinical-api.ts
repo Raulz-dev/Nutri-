@@ -74,19 +74,8 @@ export async function measurementOverview(token: string, patientId: string) {
   return { recent: recent.items, oldest, total: recent.total };
 }
 
-export const addMeasurement = (token: string, patientId: string, data: {
-  measured_on: string; weight_kg: number; body_fat_pct: number | null; note: string;
-}) => apiRequest<ClinicalMeasurement>(`/patients/${patientId}/measurements`, {
-  method: "POST", token, body: JSON.stringify(data),
-});
-
 export const listFollowUps = (token: string, patientId: string, offset = 0, limit = 10) =>
   apiRequest<Page<ClinicalFollowUp>>(`/patients/${patientId}/follow-ups?offset=${offset}&limit=${limit}`, { token });
-
-export const addFollowUp = (token: string, patientId: string, text: string) =>
-  apiRequest<ClinicalFollowUp>(`/patients/${patientId}/follow-ups`, {
-    method: "POST", token, body: JSON.stringify({ text }),
-  });
 
 export const saveMeasurement = (token: string, patientId: string, id: string, data: {
   measured_on: string; weight_kg: number; body_fat_pct: number | null; note: string;

@@ -8,7 +8,7 @@ import type { User } from "../../users/types";
 import { AdminIcon, AdminShell } from "../AdminShell";
 import { AssignmentModal } from "../components/users/AssignmentModal";
 import { ConfirmModal } from "../components/users/ConfirmModal";
-import { TablePagination } from "../components/TablePagination";
+import { TablePagination } from "../../../components/shared/TablePagination";
 
 export function AdminPatientsPage() {
   const { session } = useAuth();

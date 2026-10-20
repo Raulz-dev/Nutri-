@@ -13,8 +13,8 @@ from cryptography.fernet import InvalidToken
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.care.invites import cipher
 from app.care.models import EmailOutboxModel, InvitationModel
+from app.care.outbox import cipher
 from app.care.policies import utcnow
 from app.config.settings import Settings, get_settings
 from app.database.session import AsyncSessionLocal

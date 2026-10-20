@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from typing import Annotated, Literal
 from uuid import UUID
 
-from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select, update
@@ -11,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.care.models import EmailOutboxModel, InvitationModel
+from app.care.outbox import cipher
 from app.care.policies import audit, lock_users, require_admin, utcnow
 from app.config.settings import get_settings
 from app.database.session import get_db
@@ -63,13 +63,6 @@ def delivery_status(
         status=status,
         resend_available_at=(outbox.delivered_at + RESEND_INTERVAL if status == "sent" else None),
     )
-
-
-def cipher():
-    key = get_settings().outbox_encryption_key
-    if not key:
-        raise RuntimeError("OUTBOX_ENCRYPTION_KEY não configurada.")
-    return Fernet(key.encode())
 
 
 async def queue_invitation(db: AsyncSession, user: UserModel):

@@ -8,8 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.care.invites import cipher
 from app.care.models import CareAssignmentModel, EmailOutboxModel, InvitationModel
+from app.care.outbox import cipher
 from app.care.policies import utcnow
 from app.config.settings import get_settings
 from app.database.session import AsyncSessionLocal

@@ -11,10 +11,8 @@ from app.security.password import PasswordHasher
 from app.users.domain.enums import UserRole
 from app.users.domain.user import User
 from app.users.infrastructure.models import UserModel
-from app.users.infrastructure.repository import (
-    SQLAlchemyRefreshSessionRepository,
-    SQLAlchemyUserRepository,
-)
+from app.users.infrastructure.refresh_session_repository import SQLAlchemyRefreshSessionRepository
+from app.users.infrastructure.repository import SQLAlchemyUserRepository
 from app.users.presentation.dependencies import get_current_user
 
 router = APIRouter(prefix="/account", tags=["Conta"])

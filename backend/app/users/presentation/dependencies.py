@@ -26,11 +26,9 @@ from app.users.domain.enums import UserStatus
 from app.users.domain.user import User
 from app.users.infrastructure.email import QueuedPasswordResetSender
 from app.users.infrastructure.models import RefreshSessionModel
-from app.users.infrastructure.repository import (
-    SQLAlchemyPasswordResetRepository,
-    SQLAlchemyRefreshSessionRepository,
-    SQLAlchemyUserRepository,
-)
+from app.users.infrastructure.password_reset_repository import SQLAlchemyPasswordResetRepository
+from app.users.infrastructure.refresh_session_repository import SQLAlchemyRefreshSessionRepository
+from app.users.infrastructure.repository import SQLAlchemyUserRepository
 
 bearer_scheme = HTTPBearer(auto_error=False)
 

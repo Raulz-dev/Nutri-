@@ -1,18 +1,31 @@
-from datetime import date, datetime, time
+from datetime import date, datetime
 from typing import Annotated, Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.care.clinical_router import clinical_writer
 from app.care.interaction_models import AppointmentModel, CareMessageModel
+from app.care.interaction_schemas import (
+    AppointmentContent,
+    AppointmentCreate,
+    AppointmentPage,
+    AppointmentResponse,
+    AppointmentStatus,
+    AppointmentUpdate,
+    ConversationPage,
+    ConversationResponse,
+    MessageCreate,
+    MessageCursor,
+    MessagePage,
+    MessageRead,
+    MessageResponse,
+)
 from app.care.models import CareAssignmentModel
-from app.care.policies import audit, lock_users, utcnow
+from app.care.policies import audit, clinical_writer, lock_users, utcnow
 from app.database.session import get_db
 from app.users.domain.enums import UserRole
 from app.users.domain.exceptions import UserAccessDeniedError, UserConflictError
@@ -21,61 +34,6 @@ from app.users.infrastructure.models import UserModel
 from app.users.presentation.dependencies import get_current_user
 
 router = APIRouter(tags=["Consultas e mensagens"])
-
-
-class AppointmentContent(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    patient_id: UUID
-    appointment_on: date
-    appointment_at: time
-    format: Literal["Presencial", "Online"]
-    location: str = Field(min_length=1, max_length=500)
-    guidance: str = Field(default="", max_length=2000)
-
-    @field_validator("location", "guidance")
-    @classmethod
-    def normalized_text(cls, value: str, info):
-        value = value.strip()
-        if info.field_name == "location" and not value:
-            raise ValueError("Informe o local ou link da consulta.")
-        return value
-
-    @model_validator(mode="after")
-    def valid_link(self):
-        if self.format == "Online" and not self.location.startswith(("https://", "http://")):
-            raise ValueError("Informe um link começando com https:// ou http://.")
-        return self
-
-
-class AppointmentCreate(AppointmentContent):
-    id: UUID
-
-
-class AppointmentUpdate(AppointmentContent):
-    expected_revision: int = Field(ge=1)
-
-
-class AppointmentStatus(BaseModel):
-    status: Literal["completed", "cancelled"]
-    expected_revision: int = Field(ge=1)
-
-
-class AppointmentResponse(AppointmentContent):
-    id: UUID
-    nutritionist_id: UUID
-    author_id: UUID
-    patient_name: str
-    status: Literal["scheduled", "completed", "cancelled"]
-    revision: int
-    created_at: datetime
-    updated_at: datetime
-
-
-class AppointmentPage(BaseModel):
-    items: list[AppointmentResponse]
-    total: int
-    offset: int
-    limit: int
 
 
 def appointment_response(row: AppointmentModel, patient_name: str) -> AppointmentResponse:
@@ -276,63 +234,6 @@ async def change_appointment_status(
     patient = await db.get(UserModel, row.patient_id)
     audit(db, "change_appointment_status", "appointment", row.id, status=data.status)
     return appointment_response(row, patient.name)
-
-
-class ConversationResponse(BaseModel):
-    id: UUID
-    patient_id: UUID
-    patient_name: str
-    nutritionist_id: UUID
-    nutritionist_name: str
-    active: bool
-    started_at: datetime
-    ended_at: datetime | None
-    unread: int
-
-
-class ConversationPage(BaseModel):
-    items: list[ConversationResponse]
-    total: int
-    offset: int
-    limit: int
-
-
-class MessageCreate(BaseModel):
-    id: UUID
-    text: str = Field(min_length=1, max_length=4000)
-
-    @field_validator("text")
-    @classmethod
-    def nonblank_text(cls, value: str):
-        value = value.strip()
-        if not value:
-            raise ValueError("Escreva uma mensagem.")
-        return value
-
-
-class MessageResponse(BaseModel):
-    id: UUID
-    assignment_id: UUID
-    sender_id: UUID
-    text: str
-    sent_at: datetime
-    read_at: datetime | None
-
-
-class MessageCursor(BaseModel):
-    sent_at: datetime
-    id: UUID
-
-
-class MessagePage(BaseModel):
-    items: list[MessageResponse]
-    total: int
-    limit: int
-    next_cursor: MessageCursor | None
-
-
-class MessageRead(BaseModel):
-    ids: list[UUID] = Field(min_length=1, max_length=100)
 
 
 async def accessible_conversation(

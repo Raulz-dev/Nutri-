@@ -50,3 +50,15 @@ def test_request_body_is_bounded():
     response = client.post("/api/v1/auth/login", content=b"x" * (1048576 + 1))
     assert response.status_code == 413
     assert "x" * 100 not in response.text
+
+
+def test_clinical_message_schema_keeps_public_reference():
+    schema = client.get("/openapi.json").json()
+    reference = "#/components/schemas/app__care__interaction_router__MessageResponse"
+    response = schema["paths"]["/api/v1/conversations/{assignment_id}/messages"]["post"]
+    assert response["responses"]["201"]["content"]["application/json"]["schema"] == {
+        "$ref": reference
+    }
+    schemas = schema["components"]["schemas"]
+    assert schemas["MessagePage"]["properties"]["items"]["items"] == {"$ref": reference}
+    assert "assignment_id" in schemas[reference.rsplit("/", 1)[-1]]["properties"]

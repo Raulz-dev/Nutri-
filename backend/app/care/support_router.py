@@ -8,7 +8,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.care.account_models import SupportMessageModel
-from app.care.interaction_router import MessageCreate, MessageRead
+from app.care.interaction_schemas import MessageCreate, MessageRead
 from app.care.policies import audit, lock_users, utcnow
 from app.database.session import get_db
 from app.users.domain.enums import UserRole, UserStatus

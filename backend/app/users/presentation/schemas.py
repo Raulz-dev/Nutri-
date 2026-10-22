@@ -1,9 +1,13 @@
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field, model_validator
 
+from app.users.domain.cpf import normalize_cpf
 from app.users.domain.enums import UserRole, UserStatus
+
+Cpf = Annotated[str, BeforeValidator(normalize_cpf)]
 
 
 class UserResponse(BaseModel):
@@ -16,6 +20,15 @@ class UserResponse(BaseModel):
     first_access_pending: bool = False
 
 
+class CurrentUserResponse(UserResponse):
+    cpf: str | None = None
+
+
+class CpfUpdateRequest(BaseModel):
+    cpf: Cpf
+    current_password: str = Field(min_length=1, max_length=128)
+
+
 class UserListResponse(BaseModel):
     items: list[UserResponse]
     total: int
@@ -24,6 +37,7 @@ class UserListResponse(BaseModel):
 
 
 class CreateUserRequest(BaseModel):
+    cpf: Cpf
     name: str = Field(min_length=2, max_length=120)
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)

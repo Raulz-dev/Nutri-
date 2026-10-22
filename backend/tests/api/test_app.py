@@ -14,7 +14,12 @@ def test_health() -> None:
     assert response.headers["cache-control"] == "no-store"
 
 
-def test_validation_error_does_not_echo_sensitive_body() -> None:
+def test_validation_error_does_not_echo_sensitive_body(monkeypatch) -> None:
+    async def allow(*args):
+        return None
+
+    monkeypatch.setattr("app.security.rate_limit.reserve_attempt", allow)
+    monkeypatch.setattr("app.security.rate_limit.cleanup_expired_attempts", allow)
     response = client.post(
         "/api/v1/auth/login", json={"email": "invalid", "password": "secret-example"}
     )

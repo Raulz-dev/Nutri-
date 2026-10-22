@@ -14,6 +14,7 @@ from app.care.models import (
 )
 from app.care.plan_models import MealPlanModel
 from app.database.base import Base
+from app.security.rate_limit import AuthAttemptModel
 from app.users.infrastructure.models import (
     AuditEventModel,
     PasswordResetTokenModel,
@@ -22,6 +23,7 @@ from app.users.infrastructure.models import (
 )
 
 __all__ = [
+    "AuthAttemptModel",
     "ProfessionalProfileModel",
     "SupportMessageModel",
     "FollowUpModel",

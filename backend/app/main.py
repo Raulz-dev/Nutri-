@@ -1,4 +1,4 @@
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.care.account_router import router as account_router
@@ -13,6 +13,7 @@ from app.care.router import router as care_router
 from app.care.support_router import router as support_router
 from app.config.settings import get_settings
 from app.operations import configure_operations
+from app.security.rate_limit import limit_sensitive_requests
 from app.users.presentation.auth_router import router as auth_router
 from app.users.presentation.router import router as users_router
 
@@ -25,9 +26,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
+    expose_headers=["Retry-After"],
 )
 
-api_v1 = APIRouter(prefix="/api/v1")
+api_v1 = APIRouter(prefix="/api/v1", dependencies=[Depends(limit_sensitive_requests)])
 api_v1.include_router(users_router)
 api_v1.include_router(auth_router)
 api_v1.include_router(care_router)

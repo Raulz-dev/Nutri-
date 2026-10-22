@@ -9,11 +9,13 @@ from app.care.policies import audit, lock_users
 from app.database.session import get_db
 from app.security.password import PasswordHasher
 from app.users.domain.enums import UserRole
+from app.users.domain.exceptions import UserConflictError
 from app.users.domain.user import User
 from app.users.infrastructure.models import UserModel
 from app.users.infrastructure.refresh_session_repository import SQLAlchemyRefreshSessionRepository
 from app.users.infrastructure.repository import SQLAlchemyUserRepository
 from app.users.presentation.dependencies import get_current_user
+from app.users.presentation.schemas import CpfUpdateRequest
 
 router = APIRouter(prefix="/account", tags=["Conta"])
 Actor = Annotated[User, Depends(get_current_user)]
@@ -106,3 +108,20 @@ async def save_settings(data: SettingsUpdate, actor: Actor, db: DB):
     return AccountSettings(
         name=row.name, email=row.email, email_notifications=row.email_notifications
     )
+
+
+@router.put("/cpf")
+async def complete_cpf(data: CpfUpdateRequest, actor: Actor, db: DB) -> dict[str, str]:
+    locked = await lock_users(db, actor.id)
+    row = locked[actor.id]
+    if row.role not in (UserRole.PATIENT, UserRole.NUTRITIONIST):
+        raise HTTPException(403, "CPF disponível apenas para pacientes e nutricionistas.")
+    if not PasswordHasher().verify(data.current_password, row.password_hash):
+        raise HTTPException(403, "Senha atual inválida.")
+    if row.cpf is not None:
+        raise UserConflictError("O CPF desta conta já foi cadastrado e não pode ser alterado.")
+    user = SQLAlchemyUserRepository._to_domain(row)
+    user.cpf = data.cpf
+    await SQLAlchemyUserRepository(db).update(user)
+    audit(db, "complete_cpf", "user", actor.id)
+    return {"cpf": data.cpf}

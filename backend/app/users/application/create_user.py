@@ -13,7 +13,7 @@ class CreateUser:
         self._repository = repository
         self._password_hasher = password_hasher
 
-    async def execute(self, name: str, email: str, password: str, role: UserRole) -> User:
+    async def execute(self, name: str, email: str, password: str, role: UserRole, cpf: str) -> User:
         if role != UserRole.PATIENT:
             raise InvalidUserRoleError("O cadastro público permite apenas pacientes.")
 
@@ -22,6 +22,7 @@ class CreateUser:
             raise UserEmailAlreadyExistsError("E-mail já cadastrado.")
 
         user = User(
+            cpf=cpf,
             name=name,
             email=normalized_email,
             password_hash=self._password_hasher.hash(password),

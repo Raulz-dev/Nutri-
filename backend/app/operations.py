@@ -3,7 +3,6 @@ import json
 import logging
 import secrets
 import time
-from collections import OrderedDict
 from contextvars import ContextVar
 from uuid import UUID, uuid4
 
@@ -16,6 +15,7 @@ from starlette.responses import JSONResponse, Response
 
 from app.config.settings import get_settings
 from app.database.session import AsyncSessionLocal
+from app.security.rate_limit import release_successful_attempt
 from app.users.domain.exceptions import UserError
 
 actor_id: ContextVar[UUID | None] = ContextVar("actor_id", default=None)
@@ -46,7 +46,6 @@ def error_response(status: int, detail: str, headers=None):
 class TelemetryMiddleware:
     def __init__(self, app):
         self.app = app
-        self.attempts = OrderedDict()
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -63,6 +62,9 @@ class TelemetryMiddleware:
             if message["type"] == "http.response.start":
                 started = True
                 status = message["status"]
+                reservation = scope.get("state", {}).pop("auth_attempt", None)
+                if reservation is not None and 200 <= status < 300:
+                    await release_successful_attempt(reservation)
                 message["headers"] += [
                     (b"x-request-id", rid.encode()),
                     (b"cache-control", b"no-store"),
@@ -72,24 +74,6 @@ class TelemetryMiddleware:
             await send(message)
 
         try:
-            path = scope["path"]
-            if scope["method"] == "POST" and (
-                path.startswith("/api/v1/auth/") or path == "/api/v1/users"
-            ):
-                key = (scope.get("client") or ("unknown",))[0]
-                now = time.monotonic()
-                count, since = self.attempts.pop(key, (0, now))
-                if now - since >= 60:
-                    count, since = 0, now
-                self.attempts[key] = (count + 1, since)
-                if len(self.attempts) > 10000:
-                    self.attempts.popitem(last=False)
-                if count >= get_settings().auth_rate_limit:
-                    return await error_response(
-                        429,
-                        "Muitas tentativas. Tente novamente em instantes.",
-                        {"Retry-After": "60"},
-                    )(scope, receive, safe_send)
             if scope["method"] in {"POST", "PUT", "PATCH"}:
                 body = bytearray()
                 async with asyncio.timeout(15):

@@ -60,3 +60,7 @@ class UserAccessDeniedError(UserError):
 
 class CannotDeleteCurrentUserError(UserError):
     pass
+
+
+class UserCpfAlreadyExistsError(UserConflictError):
+    pass

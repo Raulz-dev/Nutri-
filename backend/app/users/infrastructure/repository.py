@@ -13,10 +13,12 @@ from app.care.policies import (
     utcnow,
 )
 from app.operations import actor_id
+from app.users.domain.cpf import normalize_cpf
 from app.users.domain.enums import UserRole, UserStatus
 from app.users.domain.exceptions import (
     UserAccessDeniedError,
     UserConflictError,
+    UserCpfAlreadyExistsError,
     UserEmailAlreadyExistsError,
 )
 from app.users.domain.repository import UserRepository
@@ -39,6 +41,11 @@ class SQLAlchemyUserRepository(UserRepository):
             await self._db.flush()
         except IntegrityError as error:
             await self._db.rollback()
+            if (
+                getattr(getattr(error.orig, "diag", None), "constraint_name", None)
+                == "uq_users_cpf"
+            ):
+                raise UserCpfAlreadyExistsError("CPF já cadastrado em outra conta.") from error
             raise UserEmailAlreadyExistsError("E-mail já cadastrado.") from error
         await self._db.refresh(model)
         audit(
@@ -123,6 +130,11 @@ class SQLAlchemyUserRepository(UserRepository):
         ):
             await require_no_assignments(self._db, user.id)
             await cancel_pending_link_invitations(self._db, user.id)
+        if user.cpf is not None:
+            cpf = normalize_cpf(user.cpf)
+            if model.cpf is not None and model.cpf != cpf:
+                raise UserConflictError("O CPF desta conta não pode ser alterado.")
+            model.cpf = cpf
         model.name = user.name
         model.email = user.email
         password_changed = model.password_hash != user.password_hash
@@ -135,6 +147,11 @@ class SQLAlchemyUserRepository(UserRepository):
             await self._db.flush()
         except IntegrityError as error:
             await self._db.rollback()
+            if (
+                getattr(getattr(error.orig, "diag", None), "constraint_name", None)
+                == "uq_users_cpf"
+            ):
+                raise UserCpfAlreadyExistsError("CPF já cadastrado em outra conta.") from error
             raise UserEmailAlreadyExistsError("E-mail já cadastrado.") from error
         await self._db.refresh(model)
         audit(
@@ -198,6 +215,7 @@ class SQLAlchemyUserRepository(UserRepository):
     def _to_model(user: User) -> UserModel:
         return UserModel(
             id=user.id,
+            cpf=user.cpf,
             name=user.name,
             email=user.email,
             password_hash=user.password_hash,
@@ -211,6 +229,7 @@ class SQLAlchemyUserRepository(UserRepository):
     def _to_domain(model: UserModel) -> User:
         return User(
             id=model.id,
+            cpf=model.cpf,
             name=model.name,
             email=model.email,
             password_hash=model.password_hash,

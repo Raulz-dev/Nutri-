@@ -2,7 +2,19 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid7
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Index, String, Text, func, true
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    func,
+    true,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, IdMixin, TimestampMixin
@@ -11,6 +23,10 @@ from app.users.domain.enums import UserRole, UserStatus
 
 class UserModel(Base, IdMixin, TimestampMixin):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("cpf IS NULL OR cpf ~ '^[0-9]{11}$'", name="ck_users_cpf_format"),
+    )
+    cpf: Mapped[str | None] = mapped_column(String(11))
     email_notifications: Mapped[bool] = mapped_column(
         Boolean, server_default=true(), nullable=False
     )
@@ -39,6 +55,7 @@ class UserModel(Base, IdMixin, TimestampMixin):
     )
 
 
+Index("uq_users_cpf", UserModel.cpf, unique=True)
 Index("uq_users_email_lower", func.lower(UserModel.email), unique=True)
 
 

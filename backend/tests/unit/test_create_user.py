@@ -35,6 +35,7 @@ async def test_create_user_hashes_password() -> None:
     use_case = CreateUser(repository, hasher)
 
     user = await use_case.execute(
+        cpf="11144477735",
         name="Maria Silva",
         email="maria@example.com",
         password="senha-segura",
@@ -50,6 +51,7 @@ async def test_create_user_rejects_duplicate_email() -> None:
     repository = FakeUserRepository()
     use_case = CreateUser(repository, PasswordHasher())
     payload = {
+        "cpf": "11144477735",
         "name": "Maria Silva",
         "email": "maria@example.com",
         "password": "senha-segura",
@@ -68,6 +70,7 @@ async def test_public_registration_rejects_privileged_roles(role: UserRole) -> N
 
     with pytest.raises(InvalidUserRoleError):
         await use_case.execute(
+            cpf="11144477735",
             name="Admin Sistema",
             email="admin@example.com",
             password="senha-segura",

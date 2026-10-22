@@ -34,6 +34,7 @@ from app.users.presentation.dependencies import (
 from app.users.presentation.schemas import (
     ChangePasswordRequest,
     CreateUserRequest,
+    CurrentUserResponse,
     MessageResponse,
     UpdateUserRequest,
     UserListResponse,
@@ -94,11 +95,11 @@ async def list_users(
     )
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=CurrentUserResponse)
 async def get_me(
     current_user: Annotated[User, Depends(get_current_user)],
-) -> UserResponse:
-    return to_response(current_user)
+) -> CurrentUserResponse:
+    return CurrentUserResponse(**to_response(current_user).model_dump(), cpf=current_user.cpf)
 
 
 @router.post("/me/password", response_model=MessageResponse)

@@ -4,6 +4,7 @@ from uuid import UUID, uuid7
 
 from email_validator import EmailNotValidError, validate_email
 
+from app.users.domain.cpf import normalize_cpf
 from app.users.domain.enums import UserRole, UserStatus
 from app.users.domain.exceptions import (
     InvalidUserEmailError,
@@ -24,8 +25,11 @@ class User:
     deactivated_at: datetime | None = None
     credentials_changed_at: datetime | None = None
     id: UUID = field(default_factory=uuid7)
+    cpf: str | None = None
 
     def __post_init__(self) -> None:
+        if self.cpf is not None:
+            self.cpf = normalize_cpf(self.cpf)
         self.name = self._validate_name(self.name)
         self.email = self._validate_email(self.email)
         self.password_hash = self._validate_password_hash(self.password_hash)

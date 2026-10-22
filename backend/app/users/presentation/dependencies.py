@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,7 @@ from app.database.session import get_db
 from app.operations import actor_id
 from app.security.jwt import JWTService
 from app.security.password import PasswordHasher
+from app.security.rate_limit import limit_credential_attempt
 from app.users.application.change_password import ChangePassword
 from app.users.application.create_user import CreateUser
 from app.users.application.delete_user import DeleteUser
@@ -66,6 +67,7 @@ def get_jwt_service(
 
 
 async def get_current_user(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     repository: Annotated[SQLAlchemyUserRepository, Depends(get_user_repository)],
     jwt_service: Annotated[JWTService, Depends(get_jwt_service)],
@@ -108,6 +110,7 @@ async def get_current_user(
         .limit(1)
     ):
         raise unauthorized
+    await limit_credential_attempt(request, user.id)
     actor_id.set(user.id)
     return user
 

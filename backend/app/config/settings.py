@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     metrics_token: str = ""
     max_request_bytes: int = Field(default=1048576, gt=0)
     auth_rate_limit: int = Field(default=30, gt=0)
+    auth_account_rate_limit: int = Field(default=5, gt=0)
+    auth_account_window_seconds: int = Field(default=900, gt=0)
 
     smtp_host: str = "localhost"
     smtp_port: int = Field(default=1025, gt=0, le=65535)

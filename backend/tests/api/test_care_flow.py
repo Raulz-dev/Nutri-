@@ -85,7 +85,7 @@ async def test_admin_lists_deactivated_patients_and_searches_email():
 
 
 @pytest.mark.asyncio
-async def test_invitation_assignment_and_access_lifecycle(monkeypatch):
+async def test_invitation_assignment_and_access_lifecycle(monkeypatch, make_cpf):
     admin_email = f"admin-{uuid7()}@example.com"
     patient_email = f"patient-{uuid7()}@example.com"
     professional_email = f"nutritionist-{uuid7()}@example.com"
@@ -114,6 +114,7 @@ async def test_invitation_assignment_and_access_lifecycle(monkeypatch):
         registration = client.post(
             "/api/v1/users",
             json={
+                "cpf": make_cpf(),
                 "name": "Paciente Teste",
                 "email": patient_email,
                 "password": "TestPassword123!",
@@ -173,6 +174,7 @@ async def test_invitation_assignment_and_access_lifecycle(monkeypatch):
                 "token": token,
                 "password": "Professional123!",
                 "password_confirmation": "Professional123!",
+                "cpf": make_cpf(),
             },
         )
         assert accepted.status_code == 200, accepted.text
@@ -183,6 +185,7 @@ async def test_invitation_assignment_and_access_lifecycle(monkeypatch):
                     "token": token,
                     "password": "Professional123!",
                     "password_confirmation": "Professional123!",
+                    "cpf": make_cpf(),
                 },
             ).status_code
             == 422
@@ -339,7 +342,7 @@ async def test_pending_invitation_prevents_nutritionist_email_change():
 
 
 @pytest.mark.asyncio
-async def test_expired_invitation_fails():
+async def test_expired_invitation_fails(make_cpf):
     admin_email = f"admin-{uuid7()}@example.com"
     nutritionist_email = f"nutritionist-{uuid7()}@example.com"
     async with AsyncSessionLocal() as db, db.begin():
@@ -382,6 +385,7 @@ async def test_expired_invitation_fails():
                     "token": token,
                     "password": "TestPassword123!",
                     "password_confirmation": "TestPassword123!",
+                    "cpf": make_cpf(),
                 },
             ).status_code
             == 422
@@ -410,6 +414,7 @@ async def test_expired_invitation_fails():
                     "token": token,
                     "password": "TestPassword123!",
                     "password_confirmation": "TestPassword123!",
+                    "cpf": make_cpf(),
                 },
             ).status_code
             == 422
@@ -421,6 +426,7 @@ async def test_expired_invitation_fails():
                     "token": new_token,
                     "password": "TestPassword123!",
                     "password_confirmation": "TestPassword123!",
+                    "cpf": make_cpf(),
                 },
             ).status_code
             == 200
@@ -428,7 +434,7 @@ async def test_expired_invitation_fails():
 
 
 @pytest.mark.asyncio
-async def test_outbox_delivers_once_and_clears_token(monkeypatch):
+async def test_outbox_delivers_once_and_clears_token(monkeypatch, make_cpf):
     from app.care.email_worker import deliver_one
     from app.users.infrastructure.email import SMTPPasswordResetSender
 
@@ -485,6 +491,7 @@ async def test_outbox_delivers_once_and_clears_token(monkeypatch):
                 "token": invitation_token,
                 "password": "TestPassword123!",
                 "password_confirmation": "TestPassword123!",
+                "cpf": make_cpf(),
             },
         )
         assert accepted.status_code == 200, accepted.text

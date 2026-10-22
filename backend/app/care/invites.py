@@ -22,7 +22,7 @@ from app.users.domain.user import User
 from app.users.infrastructure.models import RefreshSessionModel, UserModel
 from app.users.presentation.dependencies import get_current_user
 from app.users.presentation.router import to_response
-from app.users.presentation.schemas import UserResponse
+from app.users.presentation.schemas import Cpf, UserResponse
 
 router = APIRouter(tags=["Invitations"])
 
@@ -33,6 +33,7 @@ class InviteRequest(BaseModel):
 
 
 class AcceptInviteRequest(BaseModel):
+    cpf: Cpf
     token: str = Field(min_length=32)
     password: str = Field(min_length=8, max_length=128)
     password_confirmation: str = Field(min_length=8, max_length=128)
@@ -225,6 +226,13 @@ async def accept(
         or user.role != UserRole.NUTRITIONIST
     ):
         raise HTTPException(422, "Convite inválido ou expirado.")
+    if user.cpf is not None and user.cpf != data.cpf:
+        raise HTTPException(409, "CPF diferente do cadastrado nesta conta.")
+    user.cpf = data.cpf
+    try:
+        await db.flush()
+    except IntegrityError as error:
+        raise UserConflictError("CPF já cadastrado em outra conta.") from error
     user.password_hash = PasswordHasher().hash(data.password)
     user.status = UserStatus.ACTIVE
     user.credentials_changed_at = utcnow()

@@ -22,6 +22,7 @@ export function forgotPasswordRequest(email: string) {
 }
 
 export function registerPatientRequest(data: {
+  cpf: string;
   name: string;
   email: string;
   password: string;

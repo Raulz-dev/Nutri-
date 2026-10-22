@@ -1,3 +1,4 @@
+import { AccountCpf } from "../../users/AccountCpf";
 import { useEffect, useState, type FormEvent } from "react";
 import { useErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
@@ -118,6 +119,7 @@ export function NutritionistProfilePage() {
           </button>
 
         </form>
+        <AccountCpf />
       </section>
     </>
   );

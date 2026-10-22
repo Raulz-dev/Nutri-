@@ -1,3 +1,4 @@
+import { normalizeCpf } from "../../../lib/cpf";
 import { useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AuthLayout } from "../layouts/AuthLayout";
@@ -9,6 +10,7 @@ import { acceptInvitation } from "../../care/api";
 export function FirstAccessPage() {
   const [params] = useSearchParams();
   const token = params.get("token") ?? "";
+  const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
@@ -17,19 +19,21 @@ export function FirstAccessPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
+    if (!normalizeCpf(cpf)) return setError("Informe um CPF válido.");
     if (!token) return setError("O convite está incompleto.");
     if (password.length < 8) return setError("Use pelo menos 8 caracteres.");
     if (password !== confirmation) return setError("As senhas não coincidem.");
     setLoading(true);
-    try { await acceptInvitation(token, password, confirmation); setDone(true); setPassword(""); setConfirmation(""); }
+    try { await acceptInvitation(token, password, confirmation, normalizeCpf(cpf)!); setDone(true); setPassword(""); setConfirmation(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Não foi possível aceitar o convite."); }
     finally { setLoading(false); }
   }
   return <AuthLayout titleId="first-access-title" eyebrow="Convite profissional" title="Defina sua senha"
-    description="Crie uma senha para acessar sua conta." badge="Nutri +" visualText="Acompanhamento nutricional.">
+    description="Informe seu CPF e crie uma senha para acessar sua conta." badge="Nutri +" visualText="Acompanhamento nutricional.">
     {done ? <div role="status" className="login-form__success">Senha definida. <Link to="/login">Entrar</Link></div> :
     <form className="login-form" onSubmit={submit} noValidate>
       <ErrorToast message={error} />
+      <Input label="CPF" name="cpf" inputMode="numeric" autoComplete="off" maxLength={14} required value={cpf} onChange={event => setCpf(event.target.value)} />
       <Input label="Nova senha" name="password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} />
       <Input label="Confirme a senha" name="confirmation" type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={e => setConfirmation(e.target.value)} />
       <Button type="submit" loading={loading} loadingLabel="Salvando...">Definir senha</Button>

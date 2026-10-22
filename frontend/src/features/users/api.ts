@@ -20,3 +20,6 @@ export async function listAllUsers(token: string) {
     if (users.length >= page.total || page.items.length === 0) return users;
   }
 }
+
+export const completeCpf = (token: string, cpf: string, current_password: string) =>
+  apiRequest<{ cpf: string }>("/account/cpf", { token, method: "PUT", body: JSON.stringify({ cpf, current_password }) });

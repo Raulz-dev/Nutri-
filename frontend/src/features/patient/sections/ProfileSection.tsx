@@ -1,3 +1,4 @@
+import { AccountCpf } from "../../users/AccountCpf";
 import { PatientIcon } from "../components/PatientIcon";
 import { PanelHeader } from "../components/PanelHeader";
 import { usePatientData } from "../usePatientData";
@@ -23,6 +24,7 @@ export function ProfileSection({ onLogout }: { onLogout: () => Promise<void> }) 
         <div><dt>Nutricionista responsável</dt><dd>{patientData.nutritionist}</dd></div>
         <div><dt>Próxima consulta</dt><dd>{clinical.appointmentLoading ? "Carregando..." : clinical.appointmentError ? "Indisponível" : patientData.appointment ? `${patientData.appointment.date}, ${patientData.appointment.time}` : "Nenhuma consulta agendada"}</dd></div>
       </dl>
+      <AccountCpf />
       <button className="patient-profile-logout" type="button" onClick={onLogout}>
         <PatientIcon name="logout" />
         <span>Sair da conta</span>

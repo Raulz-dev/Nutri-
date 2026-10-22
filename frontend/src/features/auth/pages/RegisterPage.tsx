@@ -1,3 +1,4 @@
+import { normalizeCpf } from "../../../lib/cpf";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,11 +9,12 @@ import { ErrorToast, useErrorToast } from "../../../components/ui/ErrorToast";
 import { ApiError } from "../../../lib/http-client";
 import { registerPatientRequest } from "../api";
 
-type RegisterErrors = Partial<Record<"name" | "email" | "password" | "confirmation", string>>;
+type RegisterErrors = Partial<Record<"name" | "email" | "cpf" | "password" | "confirmation", string>>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const showError = useErrorToast();
+  const [cpf, setCpf] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +27,7 @@ export function RegisterPage() {
     const nextErrors: RegisterErrors = {};
     if (name.trim().length < 2) nextErrors.name = "Informe seu nome completo.";
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) nextErrors.email = "Informe um e-mail válido.";
+    if (!normalizeCpf(cpf)) nextErrors.cpf = "Informe um CPF válido.";
     if (password.length < 8) nextErrors.password = "A senha deve ter pelo menos 8 caracteres.";
     if (confirmation !== password) nextErrors.confirmation = "As senhas não correspondem.";
     setErrors(nextErrors);
@@ -40,6 +43,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await registerPatientRequest({
+        cpf: normalizeCpf(cpf)!,
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
@@ -67,6 +71,7 @@ export function RegisterPage() {
         <ErrorToast message={requestError} />
         <Input label="Nome completo" name="name" autoComplete="name" required
           value={name} error={errors.name} onChange={(event) => setName(event.target.value)} />
+        <Input label="CPF" name="cpf" inputMode="numeric" autoComplete="off" required maxLength={14} value={cpf} error={errors.cpf} onChange={event => setCpf(event.target.value)} />
         <Input label="E-mail" name="email" type="email" autoComplete="email" required
           value={email} error={errors.email} onChange={(event) => setEmail(event.target.value)} />
         <Input label="Senha" name="password" type="password" autoComplete="new-password"

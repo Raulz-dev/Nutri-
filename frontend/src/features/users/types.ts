@@ -5,6 +5,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  cpf?: string | null;
   role: UserRole;
   status: UserStatus;
   deactivated_at?: string | null;

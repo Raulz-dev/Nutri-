@@ -43,9 +43,9 @@ export const resendInvitation = (token: string, userId: string) =>
   apiRequest<User>(`/admin/invitations/${userId}/resend`, { method: "POST", token });
 export const listInvitationStatuses = (token: string) =>
   apiRequest<InvitationDeliveryStatus[]>("/admin/invitations/statuses", { token });
-export const acceptInvitation = (token: string, password: string, passwordConfirmation: string) =>
+export const acceptInvitation = (token: string, password: string, passwordConfirmation: string, cpf: string) =>
   apiRequest<User>("/auth/invitations/accept", { method: "POST",
-    body: JSON.stringify({ token, password, password_confirmation: passwordConfirmation }) });
+    body: JSON.stringify({ token, password, password_confirmation: passwordConfirmation, cpf }) });
 export type AuditEvent = { id: string; action: string; entity_type: string; entity_id: string | null; target_name: string | null; actor_name: string | null; event_data: Record<string,string>; created_at: string };
 export const listAudit = (token: string, offset = 0, action = "") =>
   apiRequest<Page<AuditEvent>>(`/admin/audit-events?offset=${offset}&limit=10${action ? `&action=${encodeURIComponent(action)}` : ""}`, { token });

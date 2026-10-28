@@ -1,11 +1,11 @@
 import { TableActionIcon } from "../../../components/shared/TableActionIcon";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Modal } from "../components/Modal";
+import { InvitePatientModal } from "../components/InvitePatientModal";
 import { TablePagination } from "../../../components/shared/TablePagination";
 import { ErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
-import { listInvitationCandidates, type InvitationCandidate, invitePatient, listPatients, type PatientRow } from "../../care/api";
+import { invitePatient, listPatients, type PatientRow } from "../../care/api";
 
 const PAGE_SIZE = 5;
 
@@ -15,14 +15,6 @@ export function NutritionistPatientsPage() {
   const [rows, setRows] = useState<PatientRow[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
-  const [candidateSearch, setCandidateSearch] = useState("");
-  const [candidatePage, setCandidatePage] = useState(1);
-  const [candidates, setCandidates] = useState<InvitationCandidate[]>([]);
-  const [candidateTotal, setCandidateTotal] = useState(0);
-  const [candidateLoading, setCandidateLoading] = useState(false);
-  const [candidateError, setCandidateError] = useState("");
-  const [candidateRetry, setCandidateRetry] = useState(0);
-  const [selectedPatient, setSelectedPatient] = useState<InvitationCandidate | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -38,29 +30,13 @@ export function NutritionistPatientsPage() {
     refresh().catch((reason) => setError(reason instanceof Error ? reason.message : "Falha ao carregar pacientes."));
   }, [refresh]);
 
-  useEffect(() => {
-    if (!inviteOpen) return;
-    let active = true;
-    setCandidateLoading(true);
-    setCandidateError("");
-    const timer = setTimeout(() => {
-      listInvitationCandidates(token, candidateSearch, (candidatePage - 1) * 10)
-        .then(result => { if (active) { setCandidates(result.items); setCandidateTotal(result.total); } })
-        .catch(reason => { if (active) setCandidateError(reason instanceof Error ? reason.message : "Não foi possível buscar pacientes."); })
-        .finally(() => { if (active) setCandidateLoading(false); });
-    }, 250);
-    return () => { active = false; clearTimeout(timer); };
-  }, [inviteOpen, token, candidateSearch, candidatePage, candidateRetry]);
-
-  async function sendInvitation(event: FormEvent) {
-    event.preventDefault();
-    if (busy || !selectedPatient) return;
+  async function sendInvitation(email: string) {
+    if (busy) return;
     setBusy(true);
     setError("");
 
     try {
-      await invitePatient(token, selectedPatient.email);
-      setSelectedPatient(null);
+      await invitePatient(token, email);
       setInviteOpen(false);
       showSuccess("Convite disponível para aceite na conta do paciente.");
       await refresh();
@@ -86,9 +62,6 @@ export function NutritionistPatientsPage() {
           className="nutri-primary"
           disabled={busy}
           onClick={() => {
-            setSelectedPatient(null);
-            setCandidateSearch("");
-            setCandidatePage(1);
             setError("");
             setInviteOpen(true);
           }}
@@ -97,38 +70,12 @@ export function NutritionistPatientsPage() {
         </button>
       </div>
       {inviteOpen && (
-        <Modal
-          title="Convidar paciente"
-          onClose={() => {
-            if (!busy) setInviteOpen(false);
-          }}
-        >
-          <p>Convide um paciente já cadastrado e sem vínculo ativo. O vínculo será criado quando ele aceitar.</p>
-          <form onSubmit={sendInvitation} className="nutri-form">
-            <label>
-              Buscar por nome ou e-mail
-              <input maxLength={100} disabled={busy} value={candidateSearch} onChange={(event) => { setCandidateSearch(event.target.value); setCandidatePage(1); setSelectedPatient(null); }} placeholder="Nome ou e-mail do paciente" />
-            </label>
-            {candidateLoading ? <p role="status">Buscando pacientes...</p> : candidateError ? <div role="alert"><p>{candidateError}</p><button type="button" onClick={() => setCandidateRetry(value => value + 1)}>Tentar novamente</button></div> : <>
-              <div className="nutri-invite-candidates" role="group" aria-label="Pacientes disponíveis">
-                {candidates.map(patient => <button key={patient.id} type="button" disabled={busy} aria-pressed={selectedPatient?.id === patient.id} onClick={() => setSelectedPatient(patient)}>
-                  <strong>{patient.name}</strong><small>{patient.email}</small>
-                </button>)}
-                {!candidates.length && <p>Nenhum paciente disponível encontrado.</p>}
-              </div>
-              <TablePagination page={candidatePage} totalPages={Math.max(1, Math.ceil(candidateTotal / 10))} onPageChange={value => { setCandidatePage(value); setSelectedPatient(null); }} />
-            </>}
-            {selectedPatient && <p role="status">Selecionado: <strong>{selectedPatient.name}</strong></p>}
-            <div className="nutri-actions">
-              <button type="button" disabled={busy} onClick={() => setInviteOpen(false)}>
-                Cancelar
-              </button>
-              <button type="submit" className="nutri-primary" disabled={busy || !selectedPatient || candidateLoading || !!candidateError}>
-                {busy ? "Enviando..." : "Enviar convite"}
-              </button>
-            </div>
-          </form>
-        </Modal>
+        <InvitePatientModal
+          token={token}
+          busy={busy}
+          onClose={() => setInviteOpen(false)}
+          onInvite={sendInvitation}
+        />
       )}
       <br />
       <div className="nutri-toolbar">

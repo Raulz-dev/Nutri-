@@ -1,67 +1,13 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
-
-import { type PatientIntake, emptyPatientIntake } from "../../care/patient-intake";
-import { usePatientData } from "../usePatientData";
-import { useAuth } from "../../auth/useAuth";
-import { useErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
-import { usePatientClinical } from "../../care/PatientClinicalContext";
-import { saveIntake } from "../../care/clinical-api";
-
+import type { PatientIntake } from "../../care/patient-intake";
+import { usePatientIntakeForm } from "../hooks/usePatientIntakeForm";
 import { Field, IntakeCard, RestrictionTags, TagInput } from "../components/preferences/IntakeFields";
 
-type IntakeGroup = "goal" | "food" | "restrictions" | "health" | "routine" | "lifestyle";
-type NumericErrors = Partial<Record<"mealsPerDay" | "waterLiters" | "sleepHours", string>>;
-
 export function PatientPreferencesSection() {
-  const { patientId } = usePatientData();
-  const clinical = usePatientClinical();
-  const { session } = useAuth();
-  const showError = useErrorToast();
-  const [intake, setIntake] = useState(() => structuredClone(emptyPatientIntake));
-  const [busy, setBusy] = useState(false);
-  const savedIntake = JSON.stringify(clinical.intake?.intake ?? emptyPatientIntake);
-  useEffect(() => { setIntake(JSON.parse(savedIntake) as PatientIntake); }, [savedIntake]);
-  const [goalError, setGoalError] = useState(false);
-  const [numericErrors, setNumericErrors] = useState<NumericErrors>({});
-  const showSuccess = useSuccessToast();
-  const goalRef = useRef<HTMLSelectElement>(null);
-  const mealsRef = useRef<HTMLInputElement>(null);
-  const waterRef = useRef<HTMLInputElement>(null);
-  const sleepRef = useRef<HTMLInputElement>(null);
-
-  function updateGroup<K extends IntakeGroup>(group: K, values: Partial<PatientIntake[K]>) {
-    setIntake((current) => ({ ...current, [group]: { ...current[group], ...values } }));
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextNumericErrors: NumericErrors = {
-      mealsPerDay: validateOptionalNumber(intake.routine.mealsPerDay, 1, 12, 1, "Informe entre 1 e 12 refeições inteiras."),
-      waterLiters: validateOptionalNumber(intake.routine.waterLiters, 0, 15, 0.1, "Informe entre 0 e 15 litros, em passos de 0,1."),
-      sleepHours: validateOptionalNumber(intake.lifestyle.sleepHours, 0, 24, 0.5, "Informe entre 0 e 24 horas, em passos de 0,5."),
-    };
-    const hasGoalError = !intake.goal.primary;
-    const hasNumericError = Object.values(nextNumericErrors).some(Boolean);
-
-    setGoalError(hasGoalError);
-    setNumericErrors(nextNumericErrors);
-    if (hasGoalError || hasNumericError) {
-      showError([hasGoalError ? "Selecione um objetivo para continuar." : "", ...Object.values(nextNumericErrors)].filter(Boolean).join(" "));
-      if (hasGoalError) goalRef.current?.focus();
-      else (nextNumericErrors.mealsPerDay ? mealsRef : nextNumericErrors.waterLiters ? waterRef : sleepRef).current?.focus();
-      return;
-    }
-
-    setGoalError(false);
-    setBusy(true);
-    try {
-      const saved = await saveIntake(session?.accessToken ?? "", patientId, intake, clinical.intake?.revision ?? 0);
-      clinical.acceptIntake(saved);
-      showSuccess("Informações salvas na plataforma.");
-    } catch (reason) {
-      showError(reason instanceof Error ? reason.message : "Não foi possível salvar. Tente novamente.");
-    } finally { setBusy(false); }
-  }
+  const {
+    intake, setIntake, busy, loading, goalError, setGoalError,
+    numericErrors, setNumericErrors, goalRef, mealsRef, waterRef, sleepRef,
+    updateGroup, handleSubmit,
+  } = usePatientIntakeForm();
 
   return (
     <form className="intake-page" onSubmit={handleSubmit} noValidate>
@@ -242,15 +188,8 @@ export function PatientPreferencesSection() {
 
       <footer className="intake-actions">
         <div />
-        <button type="submit" disabled={busy || clinical.loading}>{busy ? "Salvando..." : "Salvar informações"}</button>
+        <button type="submit" disabled={busy || loading}>{busy ? "Salvando..." : "Salvar informações"}</button>
       </footer>
     </form>
   );
-}
-
-function validateOptionalNumber(value: string, minimum: number, maximum: number, step: number, message: string) {
-  if (!value.trim()) return undefined;
-  const number = Number(value);
-  const steps = (number - minimum) / step;
-  return Number.isFinite(number) && number >= minimum && number <= maximum && Math.abs(steps - Math.round(steps)) < 1e-8 ? undefined : message;
 }

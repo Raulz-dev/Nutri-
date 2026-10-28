@@ -96,16 +96,49 @@ test("formulário de preferências foca erro e salva com revisão do servidor", 
           new Event("submit", { bubbles: true, cancelable: true }),
         ),
       );
+    const goToChapter = async (index) => act(async () => form.querySelectorAll(".intake-chapters button")[index].click());
+    const input = async (element, value) => act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set.call(element, value);
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    assert.equal(form.querySelectorAll('[role="region"]:not([hidden])').length, 1);
+    const chapterSelector = form.querySelector(".intake-chapter-selector select");
+    assert.equal(chapterSelector.options.length, 7);
+    await act(async () => {
+      chapterSelector.value = "6";
+      chapterSelector.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    assert.equal(form.querySelector("#intake-chapter-6").hidden, false);
     await submit();
     assert.equal(writes.length, 0);
-    const goal = form.querySelector("select");
+    assert.equal(form.querySelector("#intake-chapter-0").hidden, false);
+    const goal = form.querySelector("#intake-chapter-0 select");
     assert.equal(document.activeElement, goal);
+    assert.equal(chapterSelector.value, "0");
     await act(async () => {
       goal.value = "food-education";
       goal.dispatchEvent(new Event("change", { bubbles: true }));
     });
+    await goToChapter(4);
+    const water = form.querySelector('#intake-chapter-4 input[step="0.1"]');
+    await input(water, "16");
+    await goToChapter(6);
+    await submit();
+    assert.equal(writes.length, 0);
+    assert.equal(form.querySelector("#intake-chapter-4").hidden, false);
+    assert.equal(document.activeElement, water);
+    await input(water, "2");
+    await goToChapter(1);
+    const tagDraft = form.querySelector('#intake-chapter-1 .tag-entry input');
+    await input(tagDraft, "Rascunho sintético");
+    await goToChapter(2);
+    await goToChapter(1);
+    assert.equal(tagDraft.value, "Rascunho sintético");
+    assert.equal(chapterSelector.value, "1");
+    assert.equal(writes.length, 0, "Navegar não deve salvar o formulário");
     await submit();
     assert.equal(writes.length, 1);
+    assert.equal(writes[0].intake.routine.waterLiters, "2");
     assert.equal(writes[0].expected_revision, 3);
     assert.equal(writes[0].intake.goal.primary, "food-education");
     await submit();

@@ -18,10 +18,10 @@ import "../styles/patient.css";
 
 const navigation: { id: PatientSection; label: string; mobileLabel?: string; icon: IconName; path: string }[] = [
   { id: "home", label: "Visão geral", icon: "home", path: "/app/paciente" },
+  { id: "preferences", label: "Preferências", mobileLabel: "Prefer.", icon: "target", path: "/app/paciente/preferencias" },
   { id: "meal-plan", label: "Plano alimentar", icon: "meal", path: "/app/paciente/plano-alimentar" },
   { id: "progress", label: "Evolução", icon: "chart", path: "/app/paciente/evolucao" },
   { id: "messages", label: "Mensagens", icon: "message", path: "/app/paciente/mensagens" },
-  { id: "preferences", label: "Preferências", mobileLabel: "Prefer.", icon: "target", path: "/app/paciente/preferencias" },
   { id: "profile", label: "Meu perfil", icon: "user", path: "/app/paciente/perfil" },
 ];
 

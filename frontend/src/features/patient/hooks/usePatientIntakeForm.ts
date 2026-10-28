@@ -35,6 +35,16 @@ export function usePatientIntakeForm() {
     structuredClone(emptyPatientIntake),
   );
   const [busy, setBusy] = useState(false);
+  const [chapter, setChapter] = useState(0);
+  const pendingFocus = useRef<HTMLInputElement | HTMLSelectElement | null>(
+    null,
+  );
+
+  // Reveal the chapter before focusing a field that was hidden at submit time.
+  useEffect(() => {
+    pendingFocus.current?.focus();
+    pendingFocus.current = null;
+  });
   const savedIntake = JSON.stringify(
     clinical.intake?.intake ?? emptyPatientIntake,
   );
@@ -76,14 +86,20 @@ export function usePatientIntakeForm() {
           .filter(Boolean)
           .join(" "),
       );
-      if (hasGoalError) goalRef.current?.focus();
-      else
-        (nextNumericErrors.mealsPerDay
-          ? mealsRef
+      setChapter(
+        hasGoalError
+          ? 0
+          : nextNumericErrors.mealsPerDay || nextNumericErrors.waterLiters
+            ? 4
+            : 5,
+      );
+      pendingFocus.current = hasGoalError
+        ? goalRef.current
+        : nextNumericErrors.mealsPerDay
+          ? mealsRef.current
           : nextNumericErrors.waterLiters
-            ? waterRef
-            : sleepRef
-        ).current?.focus();
+            ? waterRef.current
+            : sleepRef.current;
       return;
     }
 
@@ -114,6 +130,8 @@ export function usePatientIntakeForm() {
     setIntake,
     busy,
     loading: clinical.loading,
+    chapter,
+    setChapter,
     goalError,
     setGoalError,
     numericErrors,

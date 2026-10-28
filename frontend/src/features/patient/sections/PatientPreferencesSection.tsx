@@ -2,24 +2,34 @@ import type { PatientIntake } from "../../care/patient-intake";
 import { usePatientIntakeForm } from "../hooks/usePatientIntakeForm";
 import { Field, IntakeCard, RestrictionTags, TagInput } from "../components/preferences/IntakeFields";
 
+const chapters = ["Objetivo", "Alimentação", "Restrições", "Saúde", "Rotina", "Estilo de vida", "Observações"];
+
 export function PatientPreferencesSection() {
   const {
-    intake, setIntake, busy, loading, goalError, setGoalError,
+    intake, setIntake, busy, loading, chapter, setChapter, goalError, setGoalError,
     numericErrors, setNumericErrors, goalRef, mealsRef, waterRef, sleepRef,
     updateGroup, handleSubmit,
   } = usePatientIntakeForm();
 
   return (
     <form className="intake-page" onSubmit={handleSubmit} noValidate>
-      <section className="intake-intro">
-        <div>
-          <span className="card-label">Conhecer você ajuda no cuidado</span>
-          <h2>Conte um pouco sobre sua alimentação e rotina</h2>
-          <p>Preencha apenas o que considerar importante. Você poderá atualizar essas informações quando quiser.</p>
-        </div>
-        <span>Somente o objetivo é obrigatório</span>
-      </section>
+      <label className="intake-field intake-chapter-selector">
+        <span className="sr-only">Capítulo das preferências</span>
+        <select value={chapter} onChange={(event) => setChapter(Number(event.target.value))} aria-controls={`intake-chapter-${chapter}`}>
+          {chapters.map((label, index) => (
+            <option key={label} value={index}>{index + 1} de {chapters.length} · {label}</option>
+          ))}
+        </select>
+      </label>
+      <nav className="intake-chapters" aria-label="Capítulos das preferências">
+        {chapters.map((label, index) => (
+          <button key={label} type="button" aria-current={chapter === index ? "step" : undefined} aria-controls={`intake-chapter-${index}`} onClick={() => setChapter(index)}>
+            <span aria-hidden="true">{index + 1}</span>{label}
+          </button>
+        ))}
+      </nav>
 
+      <div id="intake-chapter-0" hidden={chapter !== 0} role="region" aria-label="1. Objetivo">
       <IntakeCard number="01" title="Seu objetivo" description="Qual é o principal resultado que você busca?">
         <div className="intake-grid two-columns">
         <Field label="Objetivo principal" required error={goalError ? "Selecione um objetivo para continuar." : undefined}>
@@ -46,7 +56,9 @@ export function PatientPreferencesSection() {
           </Field>
         </div>
       </IntakeCard>
+      </div>
 
+      <div id="intake-chapter-1" hidden={chapter !== 1} role="region" aria-label="2. Alimentação">
       <IntakeCard number="02" title="Preferências alimentares" description="Ajude a tornar o plano mais próximo da sua realidade.">
         <div className="intake-grid">
           <TagInput label="Alimentos que você gosta" placeholder="Ex.: banana" values={intake.food.liked} maxItems={20} onChange={(liked) => updateGroup("food", { liked })} />
@@ -71,7 +83,9 @@ export function PatientPreferencesSection() {
           </div>
         </div>
       </IntakeCard>
+      </div>
 
+      <div id="intake-chapter-2" hidden={chapter !== 2} role="region" aria-label="3. Restrições">
       <IntakeCard number="03" title="Restrições" description="Registre alergias, intolerâncias e outras limitações.">
         <div className="intake-grid">
           <RestrictionTags
@@ -97,7 +111,9 @@ export function PatientPreferencesSection() {
           </Field>
         </div>
       </IntakeCard>
+      </div>
 
+      <div id="intake-chapter-3" hidden={chapter !== 3} role="region" aria-label="4. Saúde">
       <IntakeCard number="04" title="Saúde" description="Informe condições e cuidados relevantes para sua alimentação.">
         <div className="intake-grid">
           <TagInput label="Condições de saúde" placeholder="Ex.: hipertensão" values={intake.health.conditions} maxItems={10} onChange={(conditions) => updateGroup("health", { conditions })} />
@@ -108,7 +124,9 @@ export function PatientPreferencesSection() {
           </Field>
         </div>
       </IntakeCard>
+      </div>
 
+      <div id="intake-chapter-4" hidden={chapter !== 4} role="region" aria-label="5. Rotina">
       <IntakeCard number="05" title="Rotina alimentar" description="Como a alimentação se encaixa no seu dia?">
         <div className="intake-grid two-columns">
           <Field label="Refeições por dia" error={numericErrors.mealsPerDay}>
@@ -134,7 +152,9 @@ export function PatientPreferencesSection() {
           </Field>
         </div>
       </IntakeCard>
+      </div>
 
+      <div id="intake-chapter-5" hidden={chapter !== 5} role="region" aria-label="6. Estilo de vida">
       <IntakeCard number="06" title="Estilo de vida" description="Hábitos que ajudam a contextualizar seu acompanhamento.">
         <div className="intake-grid two-columns">
           <Field label="Atividade física">
@@ -171,7 +191,9 @@ export function PatientPreferencesSection() {
           </Field>
         </div>
       </IntakeCard>
+      </div>
 
+      <div id="intake-chapter-6" hidden={chapter !== 6} role="region" aria-label="7. Observações">
       <IntakeCard number="07" title="Observações" description="Use este espaço para qualquer outra informação importante.">
         <Field label="O que mais você gostaria de contar?">
           <textarea
@@ -185,9 +207,9 @@ export function PatientPreferencesSection() {
           />
         </Field>
       </IntakeCard>
+      </div>
 
       <footer className="intake-actions">
-        <div />
         <button type="submit" disabled={busy || loading}>{busy ? "Salvando..." : "Salvar informações"}</button>
       </footer>
     </form>

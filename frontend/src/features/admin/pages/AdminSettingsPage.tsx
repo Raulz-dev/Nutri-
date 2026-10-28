@@ -1,6 +1,11 @@
+import { AccountSettingsForm } from "../components/settings/AccountSettingsForm";
+import { ChangePasswordForm } from "../components/settings/ChangePasswordForm";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useErrorToast, useSuccessToast } from "../../../components/ui/ErrorToast";
+import {
+  useErrorToast,
+  useSuccessToast,
+} from "../../../components/ui/ErrorToast";
 import { useAuth } from "../../auth/useAuth";
 import { AdminShell } from "../AdminShell";
 import {
@@ -89,105 +94,24 @@ export function AdminSettingsPage() {
         <p role="status">Carregando configurações...</p>
       ) : (
         <div className="admin-settings-grid">
-          <section className="admin-panel">
-            <span className="admin-section-label">Perfil</span>
-            <h2>Dados da conta</h2>
-            <form className="admin-settings-form" onSubmit={submitSettings}>
-              <label>
-                Nome
-                <input
-                  required
-                  minLength={2}
-                  maxLength={120}
-                  value={settings.name}
-                  onChange={(event) =>
-                    setSettings({ ...settings, name: event.target.value })
-                  }
-                />
-              </label>
-              <label>
-                E-mail
-                <input
-                  required
-                  type="email"
-                  value={settings.email}
-                  onChange={(event) =>
-                    setSettings({ ...settings, email: event.target.value })
-                  }
-                />
-              </label>
-              <label className="admin-check">
-                <input
-                  type="checkbox"
-                  checked={settings.email_notifications}
-                  onChange={(event) =>
-                    setSettings({
-                      ...settings,
-                      email_notifications: event.target.checked,
-                    })
-                  }
-                />
-                Receber notificações administrativas por e-mail
-              </label>
-              <label>
-                Senha atual
-                <input
-                  required
-                  type="password"
-                  autoComplete="current-password"
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
-                />
-              </label>
-              <p>Ao alterar o e-mail, entre novamente com o novo endereço.</p>
-
-              <button className="admin-primary-button" disabled={busy}>
-                Salvar configurações
-              </button>
-            </form>
-          </section>
-          <section className="admin-panel">
-            <span className="admin-section-label">Segurança</span>
-            <h2>Alterar senha</h2>
-            <form className="admin-settings-form" onSubmit={submitPassword}>
-              <label>
-                Senha atual
-                <input
-                  required
-                  type="password"
-                  autoComplete="current-password"
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
-                />
-              </label>
-              <label>
-                Nova senha
-                <input
-                  required
-                  minLength={8}
-                  maxLength={128}
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </label>
-              <label>
-                Confirmar nova senha
-                <input
-                  required
-                  type="password"
-                  autoComplete="new-password"
-                  value={confirmation}
-                  onChange={(event) => setConfirmation(event.target.value)}
-                />
-              </label>
-              <p>Após a alteração, todas as sessões serão encerradas.</p>
-              <button className="admin-primary-button" disabled={busy}>
-                Alterar senha
-              </button>
-            </form>
-          </section>
+          <AccountSettingsForm
+            settings={settings}
+            onChange={setSettings}
+            currentPassword={currentPassword}
+            onPasswordChange={setCurrentPassword}
+            busy={busy}
+            onSubmit={submitSettings}
+          />
+          <ChangePasswordForm
+            currentPassword={currentPassword}
+            onCurrentPasswordChange={setCurrentPassword}
+            password={password}
+            onPasswordChange={setPassword}
+            confirmation={confirmation}
+            onConfirmationChange={setConfirmation}
+            busy={busy}
+            onSubmit={submitPassword}
+          />
         </div>
       )}
     </AdminShell>

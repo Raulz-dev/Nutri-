@@ -1,3 +1,4 @@
+import { MessageBubble, MessageComposer } from "./ConversationParts";
 import "./conversation.css";
 import {
   useCallback,
@@ -196,55 +197,33 @@ export function CareConversationPanel({
           <p className="nutri-empty">Comece a conversa.</p>
         )}
         {messages.map((message) => (
-          <div
-            className={`chat-message ${message.sender_id === currentUser?.id ? "is-patient" : ""}`}
+          <MessageBubble
             key={message.id}
+            text={message.text}
+            own={message.sender_id === currentUser?.id}
           >
-            <div>
-              <p>{message.text}</p>
-              <time dateTime={message.sent_at}>
-                {new Date(message.sent_at).toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </time>
-            </div>
-          </div>
+            <time dateTime={message.sent_at}>
+              {new Date(message.sent_at).toLocaleString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </time>
+          </MessageBubble>
         ))}
       </div>
       {conversation.active && (
-        <form className="chat-composer" onSubmit={submit}>
-          <label className="sr-only" htmlFor="conversation-draft">
-            Mensagem
-          </label>
-          <textarea
-            onKeyDown={(event) => {
-              if (
-                event.key !== "Enter" ||
-                event.shiftKey ||
-                event.nativeEvent.isComposing ||
-                event.nativeEvent.keyCode === 229
-              )
-                return;
-              event.preventDefault();
-              if (!event.repeat && !busy && draft.trim())
-                event.currentTarget.form?.requestSubmit();
-            }}
-            id="conversation-draft"
-            value={draft}
-            maxLength={4000}
-            onChange={(event) => {
-              setDraft(event.target.value);
-              setPendingId("");
-            }}
-            placeholder="Escreva uma mensagem..."
-          />
-          <button type="submit" disabled={!draft.trim() || busy}>
-            Enviar
-          </button>
-        </form>
+        <MessageComposer
+          id="conversation-draft"
+          draft={draft}
+          busy={busy}
+          onSubmit={submit}
+          onChange={(value) => {
+            setDraft(value);
+            setPendingId("");
+          }}
+        />
       )}
     </article>
   );

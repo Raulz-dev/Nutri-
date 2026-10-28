@@ -1,25 +1,17 @@
 import "./conversation.css";
 import { useCallback, useRef, useState, type FormEvent } from "react";
-import { apiRequest } from "../../lib/http-client";
+import {
+  listSupportMessages,
+  markSupportMessagesRead,
+  sendSupportMessage,
+  type SupportContact,
+  type SupportMessage,
+} from "./support-api";
+import { MessageBubble, MessageComposer } from "./ConversationParts";
 import { useAuth } from "../auth/useAuth";
 import { ErrorToast } from "../../components/ui/ErrorToast";
 import { mergeMessages } from "./message-history";
 import { useVisiblePolling } from "../../hooks/useVisiblePolling";
-
-export type SupportContact = {
-  id: string;
-  name: string;
-  active: boolean;
-  unread: number;
-};
-type Message = {
-  id: string;
-  sender_id: string;
-  text: string;
-  sent_at: string;
-  read_at: string | null;
-};
-type Page = { items: Message[]; next_cursor: string | null };
 
 export function SupportConversation({
   contact,
@@ -30,20 +22,16 @@ export function SupportConversation({
 }) {
   const { session, currentUser } = useAuth();
   const token = session!.accessToken;
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [pendingId, setPendingId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const initialized = useRef(false);
-  const base = `/support/${contact.id}`;
   const load = useCallback(
     async (before?: string) => {
-      const page = await apiRequest<Page>(
-        `${base}/messages${before ? `?before=${before}` : ""}`,
-        { token },
-      );
+      const page = await listSupportMessages(token, contact.id, before);
       setMessages((current) => mergeMessages(current, page.items));
       if (before || !initialized.current) {
         initialized.current = true;
@@ -53,15 +41,11 @@ export function SupportConversation({
         .filter((item) => item.sender_id !== currentUser!.id && !item.read_at)
         .map((item) => item.id);
       if (ids.length) {
-        await apiRequest(`${base}/read`, {
-          token,
-          method: "POST",
-          body: JSON.stringify({ ids }),
-        });
+        await markSupportMessagesRead(token, contact.id, ids);
         await onRead();
       }
     },
-    [base, token, currentUser, onRead],
+    [contact.id, token, currentUser, onRead],
   );
   useVisiblePolling(
     load,
@@ -82,11 +66,7 @@ export function SupportConversation({
     const id = pendingId || crypto.randomUUID();
     setPendingId(id);
     try {
-      await apiRequest(`${base}/messages`, {
-        token,
-        method: "POST",
-        body: JSON.stringify({ id, text: draft }),
-      });
+      await sendSupportMessage(token, contact.id, id, draft);
       setDraft("");
       setPendingId("");
       await load();
@@ -114,46 +94,26 @@ export function SupportConversation({
         )}
         {!messages.length && <p>Nenhuma mensagem.</p>}
         {messages.map((item) => (
-          <div
-            className={`chat-message ${item.sender_id === currentUser!.id ? "is-patient" : ""}`}
+          <MessageBubble
             key={item.id}
+            text={item.text}
+            own={item.sender_id === currentUser!.id}
           >
-            <div>
-              <p>{item.text}</p>
-              <time>{new Date(item.sent_at).toLocaleString("pt-BR")}</time>
-            </div>
-          </div>
+            <time>{new Date(item.sent_at).toLocaleString("pt-BR")}</time>
+          </MessageBubble>
         ))}
       </div>
       {contact.active && (
-        <form className="chat-composer" onSubmit={send}>
-          <label className="sr-only" htmlFor="support-draft">
-            Mensagem
-          </label>
-          <textarea
-            onKeyDown={(event) => {
-              if (
-                event.key !== "Enter" ||
-                event.shiftKey ||
-                event.nativeEvent.isComposing ||
-                event.nativeEvent.keyCode === 229
-              )
-                return;
-              event.preventDefault();
-              if (!event.repeat && !busy && draft.trim())
-                event.currentTarget.form?.requestSubmit();
-            }}
-            id="support-draft"
-            maxLength={4000}
-            value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value);
-              setPendingId("");
-            }}
-            placeholder="Escreva uma mensagem..."
-          />
-          <button disabled={busy || !draft.trim()}>Enviar</button>
-        </form>
+        <MessageComposer
+          id="support-draft"
+          draft={draft}
+          busy={busy}
+          onSubmit={send}
+          onChange={(value) => {
+            setDraft(value);
+            setPendingId("");
+          }}
+        />
       )}
     </article>
   );

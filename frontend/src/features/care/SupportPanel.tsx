@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiRequest } from "../../lib/http-client";
+import { listSupportContacts, type SupportContact } from "./support-api";
 import { useAuth } from "../auth/useAuth";
 import { ErrorToast } from "../../components/ui/ErrorToast";
 import "./support.css";
-import { SupportConversation, type SupportContact } from "./SupportConversation";
+import { SupportConversation } from "./SupportConversation";
 
 export function SupportPanel() {
   const { session } = useAuth();
@@ -18,10 +18,7 @@ export function SupportPanel() {
   const contactRequest = useRef(0);
   const load = useCallback(async () => {
     const request = ++contactRequest.current;
-    const page = await apiRequest<{ items: SupportContact[]; total: number }>(
-      `/support/contacts?offset=${offset}&search=${encodeURIComponent(search)}`,
-      { token },
-    );
+    const page = await listSupportContacts(token, offset, search);
     if (request === contactRequest.current) {
       setContacts(page.items);
       setTotal(page.total);

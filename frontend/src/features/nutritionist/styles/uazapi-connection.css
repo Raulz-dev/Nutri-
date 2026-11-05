@@ -1,0 +1,79 @@
+.uazapi-channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.uazapi-channels button {
+  padding: 0.65rem 1rem;
+  border: 1px solid #e9e0f1;
+  border-radius: 0.65rem;
+  background: white;
+  color: #7542ce;
+  cursor: pointer;
+  font: inherit;
+}
+.uazapi-channels button[aria-pressed="true"] {
+  background: #7542ce;
+  color: white;
+}
+.uazapi-connection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+}
+.uazapi-connection-label {
+  color: #7542ce;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.uazapi-connection h1 {
+  font-size: 1.65rem;
+  margin: 0.6rem 0 1rem;
+}
+.uazapi-connection p,
+.uazapi-connection li {
+  color: #60566b;
+  line-height: 1.6;
+}
+.uazapi-connection ol {
+  padding-left: 1.25rem;
+  margin: 1.5rem 0;
+}
+.uazapi-connection li {
+  padding-left: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+.uazapi-connection [role="alert"] {
+  color: #a32138;
+}
+.uazapi-qr {
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e9e0f1;
+  border-radius: 1rem;
+  padding: 1rem;
+  text-align: center;
+  background: #fff;
+}
+.uazapi-qr img {
+  display: block;
+  width: min(100%, 264px);
+  height: auto;
+}
+@media (max-width: 640px) {
+  .uazapi-connection {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+  .uazapi-qr {
+    min-height: 260px;
+  }
+}

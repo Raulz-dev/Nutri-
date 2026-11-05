@@ -128,3 +128,125 @@ def test_connection_errors_use_application_error_contract(code, expected_status,
     assert body["error"]["message"] == message
     assert body["error"]["code"] == f"http_{expected_status}"
     assert body["error"]["request_id"]
+
+
+def instance_payload(state, qr=None):
+    return {
+        "status": {"connected": state == "connected", "loggedIn": state == "connected"},
+        "instance": {"status": state, "qrcode": qr, "token": "never-return-this"},
+    }
+
+
+@pytest.mark.parametrize("state", ["connected", "connecting"])
+def test_connect_preserves_existing_session_and_pairing(state):
+    from app.uazapi.client import connect_instance
+
+    with patch("app.uazapi.client._request", return_value=instance_payload(state)) as request:
+        result = connect_instance(config())
+    assert result.state == state
+    assert request.call_count == 1
+    assert request.call_args.args[1:] == ("GET", "/instance/status")
+    assert "never-return-this" not in result.model_dump_json()
+
+
+@pytest.mark.parametrize("prefix", ["", "data:image/png;base64,"])
+def test_connect_returns_only_sanitized_qr_and_connection_flags(prefix):
+    import base64
+
+    from app.uazapi.client import connect_instance
+
+    png = base64.b64encode(b"\x89PNG\r\n\x1a\nsynthetic-image").decode()
+    with patch(
+        "app.uazapi.client._request",
+        side_effect=[
+            instance_payload("disconnected"),
+            instance_payload("connecting", prefix + png),
+        ],
+    ) as request:
+        result = connect_instance(config())
+    assert request.call_args.args[1:] == ("POST", "/instance/connect")
+    assert result.qr_code == "data:image/png;base64," + png
+    assert not result.connected
+    assert "never-return-this" not in result.model_dump_json()
+
+
+def test_connected_status_discards_obsolete_qr():
+    from app.uazapi.client import pairing_status
+
+    with patch("app.uazapi.client._request", return_value=instance_payload("connected", "old-qr")):
+        assert pairing_status(config()).qr_code is None
+
+
+def test_connect_conflict_reconciles_without_repeating_mutation():
+    from app.uazapi.client import connect_instance
+
+    with patch(
+        "app.uazapi.client._request",
+        side_effect=[
+            instance_payload("disconnected"),
+            UazapiError("connection_in_progress"),
+            instance_payload("connecting"),
+        ],
+    ) as request:
+        assert connect_instance(config()).state == "connecting"
+    assert [call.args[1] for call in request.call_args_list] == ["GET", "POST", "GET"]
+
+
+@pytest.mark.parametrize("qr", ["https://example.com/qr", "data:image/svg+xml;base64,abc", 123])
+def test_pairing_rejects_invalid_qr(qr):
+    from app.uazapi.client import pairing_status
+
+    with patch("app.uazapi.client._request", return_value=instance_payload("connecting", qr)):
+        with pytest.raises(UazapiError, match="invalid_response"):
+            pairing_status(config())
+
+
+@pytest.mark.parametrize("method,path", [("GET", "pairing"), ("POST", "connect")])
+def test_pairing_endpoints_require_owner_and_disable_caching(method, path):
+    from app.uazapi.client import PairingStatus
+
+    owner = uuid4()
+    actor = SimpleNamespace(id=uuid4(), role=UserRole.NUTRITIONIST)
+    app = FastAPI()
+    app.include_router(router)
+    configure_operations(app)
+    app.dependency_overrides[get_settings] = lambda: config(uazapi_nutritionist_id=owner)
+    app.dependency_overrides[get_current_user] = lambda: actor
+    upstream_name = "pairing_status" if method == "GET" else "connect_instance"
+    with TestClient(app) as client, patch("app.uazapi.router." + upstream_name) as upstream:
+        assert client.request(method, "/whatsapp/uazapi/" + path).status_code == 403
+        upstream.assert_not_called()
+        actor.id = owner
+        upstream.return_value = PairingStatus(connected=False, logged_in=False, state="connecting")
+        response = client.request(method, "/whatsapp/uazapi/" + path)
+        assert response.status_code == 200
+        assert response.headers["Cache-Control"] == "no-store"
+        assert response.json()["state"] == "connecting"
+        upstream.side_effect = UazapiError("timeout")
+        response = client.request(method, "/whatsapp/uazapi/" + path)
+        assert response.status_code == 504
+        assert (
+            response.json()["detail"] == "A consulta ao WhatsApp demorou demais. Tente novamente."
+        )
+
+
+def test_connect_transport_posts_empty_body_with_instance_token():
+    from app.uazapi.client import connect_instance
+
+    settings = config(uazapi_base_url="https://example.com", uazapi_instance_token="secret")
+    with patch("app.uazapi.client.httpx.Client") as factory:
+        client = factory.return_value.__enter__.return_value
+        client.get.return_value = httpx.Response(
+            200,
+            json=instance_payload("disconnected"),
+            request=httpx.Request("GET", "https://example.com/instance/status"),
+        )
+        client.post.return_value = httpx.Response(
+            200,
+            json=instance_payload("connecting"),
+            request=httpx.Request("POST", "https://example.com/instance/connect"),
+        )
+        assert connect_instance(settings).state == "connecting"
+        client.post.assert_called_once_with(
+            "https://example.com/instance/connect", headers={"token": "secret"}, json={}
+        )

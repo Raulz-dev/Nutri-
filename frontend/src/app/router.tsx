@@ -7,7 +7,7 @@ import { NutritionistPatientsPage } from "../features/nutritionist/pages/Patient
 import { ReadOnlyPatientPreview } from "../features/nutritionist/pages/ReadOnlyPatientPreview";
 import { ClinicalPatientPage } from "../features/nutritionist/pages/ClinicalPatientPage";
 import { NutritionistAppointmentsPage } from "../features/nutritionist/pages/AppointmentsPage";
-import { NutritionistMessagesPage } from "../features/nutritionist/pages/MessagesPage";
+import { MessagingChannels } from "../features/nutritionist/components/MessagingChannels";
 import { NutritionistProfilePage } from "../features/nutritionist/pages/ProfilePage";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
@@ -48,7 +48,7 @@ export function AppRouter() {
             <Route path="pacientes" element={<NutritionistPatientsPage />} />
             <Route path="pacientes/:patientId" element={<ClinicalPatientPage />} />
             <Route path="consultas" element={<NutritionistAppointmentsPage />} />
-            <Route path="mensagens" element={<NutritionistMessagesPage />} />
+            <Route path="mensagens" element={<MessagingChannels />} />
             <Route path="perfil" element={<NutritionistProfilePage />} />
             <Route path="suporte" element={<><header className="nutri-heading"><h1>Suporte</h1><p>Converse com a administração.</p></header><SupportPanel /></>} />
           </Route>

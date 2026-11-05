@@ -22,4 +22,12 @@ def connection(
         return connection_status(settings)
     except UazapiError as error:
         status = 503 if error.code == "not_configured" else 504 if error.code == "timeout" else 502
-        raise HTTPException(status, detail={"code": error.code}) from None
+        messages = {
+            "not_configured": "A conexão com o WhatsApp ainda não foi configurada.",
+            "timeout": "A consulta ao WhatsApp demorou demais. Tente novamente.",
+            "invalid_credentials": "Não foi possível autenticar a conexão com o WhatsApp.",
+            "unavailable": "Não foi possível conectar ao serviço do WhatsApp. Tente novamente.",
+            "invalid_response": "O serviço do WhatsApp retornou uma resposta inválida.",
+        }
+        detail = messages.get(error.code, "Não foi possível consultar a conexão com o WhatsApp.")
+        raise HTTPException(status, detail=detail) from None

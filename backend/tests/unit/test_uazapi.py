@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.config.settings import Settings, get_settings
+from app.operations import configure_operations
 from app.uazapi.client import UazapiError, connection_status
 from app.uazapi.router import router
 from app.users.domain.enums import UserRole
@@ -84,3 +85,46 @@ def test_transport_timeout_is_sanitized():
             connection_status(
                 config(uazapi_base_url="https://example.com", uazapi_instance_token="secret")
             )
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_status", "message"),
+    [
+        ("not_configured", 503, "A conexão com o WhatsApp ainda não foi configurada."),
+        ("timeout", 504, "A consulta ao WhatsApp demorou demais. Tente novamente."),
+        (
+            "invalid_credentials",
+            502,
+            "Não foi possível autenticar a conexão com o WhatsApp.",
+        ),
+        (
+            "unavailable",
+            502,
+            "Não foi possível conectar ao serviço do WhatsApp. Tente novamente.",
+        ),
+        ("invalid_response", 502, "O serviço do WhatsApp retornou uma resposta inválida."),
+        ("provider_error", 502, "Não foi possível consultar a conexão com o WhatsApp."),
+        ("unknown_internal_code", 502, "Não foi possível consultar a conexão com o WhatsApp."),
+    ],
+)
+def test_connection_errors_use_application_error_contract(code, expected_status, message):
+    owner = uuid4()
+    settings = config(uazapi_nutritionist_id=owner)
+    app = FastAPI()
+    app.include_router(router, prefix="/api/v1")
+    configure_operations(app)
+    app.dependency_overrides[get_settings] = lambda: settings
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
+        id=owner, role=UserRole.NUTRITIONIST
+    )
+    with (
+        TestClient(app) as client,
+        patch("app.uazapi.router.connection_status", side_effect=UazapiError(code)),
+    ):
+        response = client.get("/api/v1/whatsapp/uazapi/connection")
+    assert response.status_code == expected_status
+    body = response.json()
+    assert body["detail"] == message
+    assert body["error"]["message"] == message
+    assert body["error"]["code"] == f"http_{expected_status}"
+    assert body["error"]["request_id"]

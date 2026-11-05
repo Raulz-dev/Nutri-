@@ -14,6 +14,7 @@ from app.care.support_router import router as support_router
 from app.config.settings import get_settings
 from app.operations import configure_operations
 from app.security.rate_limit import limit_sensitive_requests
+from app.uazapi.router import router as uazapi_router
 from app.users.presentation.auth_router import router as auth_router
 from app.users.presentation.router import router as users_router
 
@@ -42,6 +43,7 @@ api_v1.include_router(audit_router)
 api_v1.include_router(dashboard_router)
 api_v1.include_router(account_router)
 api_v1.include_router(support_router)
+api_v1.include_router(uazapi_router)
 app.include_router(api_v1)
 configure_operations(app)
 

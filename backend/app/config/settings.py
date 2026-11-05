@@ -1,8 +1,9 @@
 from functools import lru_cache
 from typing import Literal
+from uuid import UUID
 
 from cryptography.fernet import Fernet
-from pydantic import Field, model_validator
+from pydantic import Field, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -28,6 +29,11 @@ class Settings(BaseSettings):
     auth_account_rate_limit: int = Field(default=5, gt=0)
     auth_account_window_seconds: int = Field(default=900, gt=0)
 
+    uazapi_base_url: HttpUrl | None = None
+    uazapi_instance_token: SecretStr = Field(default=SecretStr(""), repr=False)
+    uazapi_nutritionist_id: UUID | None = None
+    uazapi_timeout_seconds: float = Field(default=15, gt=0, le=60)
+
     smtp_host: str = "localhost"
     smtp_port: int = Field(default=1025, gt=0, le=65535)
     smtp_from_email: str = "nao-responda@maissaude.local"
@@ -48,6 +54,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_operational_secrets(self):
+        if self.uazapi_base_url:
+            url = self.uazapi_base_url
+            if url.scheme != "https" or url.username or url.password or url.query or url.fragment:
+                raise ValueError("UAZAPI_BASE_URL exige HTTPS sem credenciais, query ou fragmento.")
         if self.app_env in ("staging", "production"):
             if not self.outbox_encryption_key or not self.metrics_token:
                 raise ValueError("Configure OUTBOX_ENCRYPTION_KEY e METRICS_TOKEN.")

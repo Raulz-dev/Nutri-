@@ -371,3 +371,22 @@ async def test_password_reset_outbox_delivery_single_use_and_revocation(monkeypa
         assert client.post("/api/v1/auth/password/reset", json=body).status_code == 200
         assert client.post("/api/v1/auth/password/reset", json=body).status_code == 422
         assert client.get("/api/v1/users/me", headers=auth).status_code == 401
+
+
+async def test_stale_profile_update_preserves_new_password():
+    from app.users.infrastructure.repository import SQLAlchemyUserRepository
+
+    (user,) = await users(UserRole.PATIENT)
+    async with AsyncSessionLocal() as stale_db:
+        repo = SQLAlchemyUserRepository(stale_db)
+        stale = await repo.find_by_id(user.id)
+        async with AsyncSessionLocal() as fresh_db, fresh_db.begin():
+            fresh_repo = SQLAlchemyUserRepository(fresh_db)
+            fresh = await fresh_repo.find_by_id(user.id)
+            previous_hash = fresh.password_hash
+            fresh.change_password_hash("synthetic-replacement-hash")
+            await fresh_repo.update(fresh, expected_password_hash=previous_hash)
+        stale.change_name("Nome atualizado")
+        saved = await repo.update(stale)
+        assert saved.password_hash == "synthetic-replacement-hash"
+        assert saved.name == "Nome atualizado"

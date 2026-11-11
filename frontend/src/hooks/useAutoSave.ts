@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+
+import { AutoSaveChecks } from "./AutoSaveNavigation";
 
 // Serialize requests so a slower response never overwrites a newer draft.
 export function useAutoSave(value: string | null, save: () => Promise<void>) {
@@ -6,6 +8,14 @@ export function useAutoSave(value: string | null, save: () => Promise<void>) {
   latest.current = { value, save };
   const saved = useRef<string | null>(null);
   const running = useRef(false);
+  const checks = useContext(AutoSaveChecks);
+  useEffect(() => {
+    if (!checks) return;
+    const hasPending = () => running.current ||
+      (latest.current.value !== null && latest.current.value !== saved.current);
+    checks.add(hasPending);
+    return () => { checks.delete(hasPending); };
+  }, [checks]);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");

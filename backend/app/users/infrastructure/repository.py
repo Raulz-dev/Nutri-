@@ -77,7 +77,7 @@ class SQLAlchemyUserRepository(UserRepository):
         total = await self._db.scalar(select(func.count()).select_from(UserModel))
         return [self._to_domain(model) for model in models], total or 0
 
-    async def update(self, user: User) -> User:
+    async def update(self, user: User, *, expected_password_hash: str | None = None) -> User:
         locked = await lock_users(self._db, user.id)
         model = locked.get(user.id)
         if model is None:
@@ -130,19 +130,22 @@ class SQLAlchemyUserRepository(UserRepository):
         ):
             await require_no_assignments(self._db, user.id)
             await cancel_pending_link_invitations(self._db, user.id)
-        if user.cpf is not None:
-            cpf = normalize_cpf(user.cpf)
-            if model.cpf is not None and model.cpf != cpf:
-                raise UserConflictError("O CPF desta conta não pode ser alterado.")
-            model.cpf = cpf
-        model.name = user.name
-        model.email = user.email
-        password_changed = model.password_hash != user.password_hash
+        password_changed = expected_password_hash is not None
         if password_changed:
+            if model.password_hash != expected_password_hash:
+                raise UserConflictError("A senha foi alterada. Tente novamente.")
             model.credentials_changed_at = utcnow()
-        model.password_hash = user.password_hash
-        model.role = user.role
-        model.status = user.status
+            model.password_hash = user.password_hash
+        else:
+            if user.cpf is not None:
+                cpf = normalize_cpf(user.cpf)
+                if model.cpf is not None and model.cpf != cpf:
+                    raise UserConflictError("O CPF desta conta não pode ser alterado.")
+                model.cpf = cpf
+            model.name = user.name
+            model.email = user.email
+            model.role = user.role
+            model.status = user.status
         try:
             await self._db.flush()
         except IntegrityError as error:

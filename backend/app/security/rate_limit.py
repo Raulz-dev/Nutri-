@@ -139,6 +139,7 @@ SENSITIVE_ROUTES = {
     ("POST", "/api/v1/users/me/password"): "credentials",
     ("PUT", "/api/v1/account/settings"): "credentials",
     ("PUT", "/api/v1/account/cpf"): "credentials",
+    ("PUT", "/api/v1/account/professional-profile"): "credentials",
 }
 
 

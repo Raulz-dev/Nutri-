@@ -69,6 +69,7 @@ class ResetPassword:
         if user is None or user.status != UserStatus.ACTIVE or user.deactivated_at:
             raise InvalidPasswordResetTokenError("Token inválido ou expirado.")
 
+        expected_password_hash = user.password_hash
         user.change_password_hash(self._password_hasher.hash(new_password))
-        await self._user_repository.update(user)
+        await self._user_repository.update(user, expected_password_hash=expected_password_hash)
         await self._refresh_repository.revoke_all_for_user(user.id)

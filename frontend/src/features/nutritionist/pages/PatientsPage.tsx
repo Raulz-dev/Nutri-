@@ -56,7 +56,7 @@ export function NutritionistPatientsPage() {
       </header>
       <ErrorToast message={error} />
 
-      <div className="nutri-actions">
+      <div className="nutri-actions nutri-patient-invite-actions">
         <button
           type="button"
           className="nutri-primary"
@@ -66,7 +66,7 @@ export function NutritionistPatientsPage() {
             setInviteOpen(true);
           }}
         >
-          Enviar convite
+          Adicionar paciente
         </button>
       </div>
       {inviteOpen && (

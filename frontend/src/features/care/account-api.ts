@@ -15,7 +15,9 @@ export const getProfessionalProfile = (token: string) =>
   apiRequest<ProfessionalProfile>("/account/professional-profile", { token });
 export const saveProfessionalProfile = (
   token: string,
-  data: ProfessionalProfile,
+  data: ProfessionalProfile & {
+    account_cpf?: { cpf: string; current_password: string };
+  },
 ) =>
   apiRequest<ProfessionalProfile>("/account/professional-profile", {
     token,

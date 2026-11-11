@@ -14,9 +14,13 @@ from app.care.support_router import router as support_router
 from app.config.settings import get_settings
 from app.operations import configure_operations
 from app.security.rate_limit import limit_sensitive_requests
+from app.uazapi.messaging import router as uazapi_messaging_router
 from app.uazapi.router import router as uazapi_router
+from app.uazapi.webhook import router as uazapi_webhook_router
 from app.users.presentation.auth_router import router as auth_router
 from app.users.presentation.router import router as users_router
+from app.whatsapp.realtime import router as whatsapp_realtime_router
+from app.whatsapp.router import router as whatsapp_router
 
 settings = get_settings()
 
@@ -44,7 +48,11 @@ api_v1.include_router(dashboard_router)
 api_v1.include_router(account_router)
 api_v1.include_router(support_router)
 api_v1.include_router(uazapi_router)
+api_v1.include_router(uazapi_messaging_router)
+api_v1.include_router(uazapi_webhook_router)
+api_v1.include_router(whatsapp_router)
 app.include_router(api_v1)
+app.include_router(whatsapp_realtime_router, prefix="/api/v1")
 configure_operations(app)
 
 

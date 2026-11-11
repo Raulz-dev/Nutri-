@@ -127,6 +127,37 @@ async def test_professional_profile_persists_and_rejects_conflict():
         assert client.get(endpoint, headers=headers(client, patient)).status_code == 403
 
 
+async def test_professional_profile_saves_cpf_in_the_same_transaction(make_cpf):
+    (nutri,) = await users(UserRole.NUTRITIONIST)
+    cpf = make_cpf()
+    with TestClient(app) as client:
+        auth = headers(client, nutri)
+        endpoint = "/api/v1/account/professional-profile"
+        me = "/api/v1/users/me"
+        original = client.get(endpoint, headers=auth).json()
+        data = {
+            **original,
+            "crn": "CRN Teste",
+            "account_cpf": {"cpf": cpf, "current_password": "wrong"},
+        }
+        assert client.put(endpoint, headers=auth, json=data).status_code == 403
+        assert client.get(endpoint, headers=auth).json() == original
+        assert client.get(me, headers=auth).json()["cpf"] is None
+
+        data["account_cpf"]["current_password"] = PASSWORD
+        result = client.put(endpoint, headers=auth, json=data)
+        assert result.status_code == 200
+        assert result.json()["crn"] == "CRN Teste"
+        assert client.get(me, headers=auth).json()["cpf"] == cpf
+
+        data["revision"] = result.json()["revision"]
+        data["crn"] = "Outro CRN"
+        data["account_cpf"]["cpf"] = make_cpf()
+        assert client.put(endpoint, headers=auth, json=data).status_code == 409
+        assert client.get(endpoint, headers=auth).json() == result.json()
+        assert client.get(me, headers=auth).json()["cpf"] == cpf
+
+
 async def test_settings_reauthenticate_persist_and_password_revokes():
     (user,) = await users(UserRole.ADMIN)
     with TestClient(app) as client:

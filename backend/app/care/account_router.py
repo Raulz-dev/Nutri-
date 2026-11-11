@@ -39,6 +39,10 @@ class ProfessionalProfile(BaseModel):
         return value
 
 
+class ProfessionalProfileUpdate(ProfessionalProfile):
+    account_cpf: CpfUpdateRequest | None = None
+
+
 @router.get("/professional-profile", response_model=ProfessionalProfile)
 async def profile(actor: Actor, db: DB):
     if actor.role != UserRole.NUTRITIONIST:
@@ -48,7 +52,7 @@ async def profile(actor: Actor, db: DB):
 
 
 @router.put("/professional-profile", response_model=ProfessionalProfile)
-async def save_profile(data: ProfessionalProfile, actor: Actor, db: DB):
+async def save_profile(data: ProfessionalProfileUpdate, actor: Actor, db: DB):
     if actor.role != UserRole.NUTRITIONIST:
         raise HTTPException(403, "Acesso não autorizado.")
     locked = await lock_users(db, actor.id)
@@ -57,10 +61,12 @@ async def save_profile(data: ProfessionalProfile, actor: Actor, db: DB):
     row = await db.get(ProfessionalProfileModel, actor.id)
     if data.revision != (row.revision if row else 1):
         raise HTTPException(409, "O perfil foi alterado. Recarregue antes de salvar.")
+    if data.account_cpf is not None:
+        await save_account_cpf(data.account_cpf, locked[actor.id], db)
     if not row:
         row = ProfessionalProfileModel(user_id=actor.id)
         db.add(row)
-    for key, value in data.model_dump().items():
+    for key, value in data.model_dump(exclude={"account_cpf"}).items():
         setattr(row, key, value)
     row.revision += 1
     audit(db, "update_professional_profile", "user", actor.id)
@@ -113,7 +119,11 @@ async def save_settings(data: SettingsUpdate, actor: Actor, db: DB):
 @router.put("/cpf")
 async def complete_cpf(data: CpfUpdateRequest, actor: Actor, db: DB) -> dict[str, str]:
     locked = await lock_users(db, actor.id)
-    row = locked[actor.id]
+    await save_account_cpf(data, locked[actor.id], db)
+    return {"cpf": data.cpf}
+
+
+async def save_account_cpf(data: CpfUpdateRequest, row: UserModel, db: DB) -> None:
     if row.role not in (UserRole.PATIENT, UserRole.NUTRITIONIST):
         raise HTTPException(403, "CPF disponível apenas para pacientes e nutricionistas.")
     if not PasswordHasher().verify(data.current_password, row.password_hash):
@@ -123,5 +133,4 @@ async def complete_cpf(data: CpfUpdateRequest, actor: Actor, db: DB) -> dict[str
     user = SQLAlchemyUserRepository._to_domain(row)
     user.cpf = data.cpf
     await SQLAlchemyUserRepository(db).update(user)
-    audit(db, "complete_cpf", "user", actor.id)
-    return {"cpf": data.cpf}
+    audit(db, "complete_cpf", "user", row.id)

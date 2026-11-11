@@ -67,7 +67,6 @@ export function NutritionistMessagesPage() {
     ?? conversations.find(conversation => conversation.patient_id === params.get("paciente") && conversation.active);
 
   return <>
-    <header className="nutri-heading"><span>CONVERSAS</span><h1>Mensagens</h1><p>Orientações próximas, com o contexto de cada paciente.</p></header>
     <ErrorToast message={error} />
     <div className={`nutri-chat ${selected ? "is-open" : ""}`}>
       <aside>

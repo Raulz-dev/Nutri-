@@ -15,14 +15,40 @@ from app.care.models import (
 from app.care.plan_models import MealPlanModel
 from app.database.base import Base
 from app.security.rate_limit import AuthAttemptModel
+from app.uazapi.models import (
+    UazapiAttachment,
+    UazapiConnection,
+    UazapiConversation,
+    UazapiMessage,
+    UazapiReceipt,
+    UazapiSender,
+)
 from app.users.infrastructure.models import (
     AuditEventModel,
     PasswordResetTokenModel,
     RefreshSessionModel,
     UserModel,
 )
+from app.whatsapp.models import (
+    WhatsAppConnection,
+    WhatsAppContact,
+    WhatsAppEvent,
+    WhatsAppMessage,
+    WhatsAppSocketTicket,
+)
 
 __all__ = [
+    "UazapiAttachment",
+    "UazapiConnection",
+    "UazapiConversation",
+    "UazapiMessage",
+    "UazapiReceipt",
+    "UazapiSender",
+    "WhatsAppSocketTicket",
+    "WhatsAppConnection",
+    "WhatsAppContact",
+    "WhatsAppEvent",
+    "WhatsAppMessage",
     "AuthAttemptModel",
     "ProfessionalProfileModel",
     "SupportMessageModel",

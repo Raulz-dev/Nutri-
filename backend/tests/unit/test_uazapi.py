@@ -1,14 +1,16 @@
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import httpx
 import pytest
+from cryptography.fernet import Fernet
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.config.settings import Settings, get_settings
+from app.database.session import get_db
 from app.operations import configure_operations
 from app.uazapi.client import UazapiError, connection_status
 from app.uazapi.router import router
@@ -23,6 +25,21 @@ def config(**values):
         jwt_secret="x" * 32,
         **values,
     )
+
+
+def mock_connection(app, actor, owner):
+    encryption = Fernet(Fernet.generate_key())
+    row = SimpleNamespace(
+        base_url="https://example.com",
+        encrypted_token=encryption.encrypt(b"owner-token").decode(),
+    )
+
+    async def lookup(statement):
+        assert statement.compile().params["user_id_1"] == actor.id
+        return row if actor.id == owner else None
+
+    app.dependency_overrides[get_db] = lambda: SimpleNamespace(scalar=AsyncMock(side_effect=lookup))
+    return patch("app.uazapi.router.cipher", return_value=encryption)
 
 
 def test_configuration_protects_credentials_and_requires_https():
@@ -63,8 +80,12 @@ def test_status_route_enforces_ownership_and_returns_only_flags():
     app.include_router(router)
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_current_user] = lambda: actor
-    with TestClient(app) as client, patch("app.uazapi.router.connection_status") as upstream:
-        assert client.get("/whatsapp/uazapi/connection").status_code == 403
+    with (
+        mock_connection(app, actor, owner),
+        TestClient(app) as client,
+        patch("app.uazapi.router.connection_status") as upstream,
+    ):
+        assert client.get("/whatsapp/uazapi/connection").status_code == 503
         upstream.assert_not_called()
         actor.id = owner
         upstream.return_value = {"connected": True, "logged_in": True, "token": "secret"}
@@ -72,6 +93,7 @@ def test_status_route_enforces_ownership_and_returns_only_flags():
             "connected": True,
             "logged_in": True,
         }
+        assert upstream.call_args.args[0].uazapi_instance_token.get_secret_value() == "owner-token"
         upstream.side_effect = UazapiError("timeout")
         assert client.get("/whatsapp/uazapi/connection").status_code == 504
         upstream.side_effect = UazapiError("not_configured")
@@ -114,10 +136,10 @@ def test_connection_errors_use_application_error_contract(code, expected_status,
     app.include_router(router, prefix="/api/v1")
     configure_operations(app)
     app.dependency_overrides[get_settings] = lambda: settings
-    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
-        id=owner, role=UserRole.NUTRITIONIST
-    )
+    actor = SimpleNamespace(id=owner, role=UserRole.NUTRITIONIST)
+    app.dependency_overrides[get_current_user] = lambda: actor
     with (
+        mock_connection(app, actor, owner),
         TestClient(app) as client,
         patch("app.uazapi.router.connection_status", side_effect=UazapiError(code)),
     ):
@@ -213,8 +235,12 @@ def test_pairing_endpoints_require_owner_and_disable_caching(method, path):
     app.dependency_overrides[get_settings] = lambda: config(uazapi_nutritionist_id=owner)
     app.dependency_overrides[get_current_user] = lambda: actor
     upstream_name = "pairing_status" if method == "GET" else "connect_instance"
-    with TestClient(app) as client, patch("app.uazapi.router." + upstream_name) as upstream:
-        assert client.request(method, "/whatsapp/uazapi/" + path).status_code == 403
+    with (
+        mock_connection(app, actor, owner),
+        TestClient(app) as client,
+        patch("app.uazapi.router." + upstream_name) as upstream,
+    ):
+        assert client.request(method, "/whatsapp/uazapi/" + path).status_code == 503
         upstream.assert_not_called()
         actor.id = owner
         upstream.return_value = PairingStatus(connected=False, logged_in=False, state="connecting")
@@ -222,6 +248,7 @@ def test_pairing_endpoints_require_owner_and_disable_caching(method, path):
         assert response.status_code == 200
         assert response.headers["Cache-Control"] == "no-store"
         assert response.json()["state"] == "connecting"
+        assert upstream.call_args.args[0].uazapi_instance_token.get_secret_value() == "owner-token"
         upstream.side_effect = UazapiError("timeout")
         response = client.request(method, "/whatsapp/uazapi/" + path)
         assert response.status_code == 504
@@ -250,3 +277,88 @@ def test_connect_transport_posts_empty_body_with_instance_token():
         client.post.assert_called_once_with(
             "https://example.com/instance/connect", headers={"token": "secret"}, json={}
         )
+
+
+@pytest.mark.parametrize("oversized", [False, True])
+def test_media_download_stream_is_bounded_and_closed(monkeypatch, oversized):
+    from app.uazapi.client import download_media
+
+    class Body(httpx.SyncByteStream):
+        closed = False
+        exhausted = False
+
+        def __iter__(self):
+            if oversized:
+                yield b"x" * (64 * 1024)
+                yield b"x" * (64 * 1024)
+                raise AssertionError("Must stop reading after exceeding the limit")
+            yield b'{"mimetype":"application/pdf","base64Data":"JVBERi0xLjQ="}'
+            self.exhausted = True
+
+        def close(self):
+            self.closed = True
+
+    stream = Body()
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, stream=stream))
+    real_client = httpx.Client
+    monkeypatch.setattr("app.uazapi.client.MAX_DOWNLOAD_BODY", 64 * 1024)
+    monkeypatch.setattr(
+        "app.uazapi.client.httpx.Client",
+        lambda **kwargs: real_client(transport=transport, **kwargs),
+    )
+    settings = config(uazapi_base_url="https://example.com", uazapi_instance_token="secret")
+    if oversized:
+        with pytest.raises(UazapiError, match="media_too_large"):
+            download_media(settings, "message")
+    else:
+        assert download_media(settings, "message")["mime_type"] == "application/pdf"
+        assert stream.exhausted
+    assert stream.closed
+
+
+@pytest.mark.parametrize(
+    ("path", "size", "status"),
+    [
+        (
+            "/api/v1/whatsapp/uazapi/conversations/00000000-0000-0000-0000-000000000000/messages",
+            14_000_000,
+            204,
+        ),
+        (
+            "/api/v1/whatsapp/uazapi/conversations/00000000-0000-0000-0000-000000000000/messages",
+            14_100_000,
+            413,
+        ),
+        ("/api/v1/whatsapp/uazapi/webhook/test", 1_048_577, 413),
+        ("/api/v1/users", 1_048_577, 413),
+    ],
+)
+async def test_upload_middleware_limit_is_scoped(path, size, status, monkeypatch):
+    from app.operations import TelemetryMiddleware
+
+    monkeypatch.setattr("app.operations.get_settings", lambda: config())
+    responses = []
+    reached = False
+    remaining = size
+
+    async def receive():
+        nonlocal remaining
+        length = min(remaining, 64 * 1024)
+        remaining -= length
+        return {"type": "http.request", "body": b"x" * length, "more_body": remaining > 0}
+
+    async def send(message):
+        responses.append(message)
+
+    async def endpoint(scope, receive, send):
+        nonlocal reached
+        reached = True
+        assert len((await receive())["body"]) == size
+        await send({"type": "http.response.start", "status": 204, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
+
+    await TelemetryMiddleware(endpoint)(
+        {"type": "http", "method": "POST", "path": path, "headers": []}, receive, send
+    )
+    assert responses[0]["status"] == status
+    assert reached == (status == 204)

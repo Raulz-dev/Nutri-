@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   connectUazapi,
   getUazapiPairing,
@@ -6,8 +6,15 @@ import {
 } from "../uazapi-api";
 import "../styles/uazapi-connection.css";
 
-export function UazapiConnectionPanel({ token }: { token: string }) {
+export function UazapiConnectionPanel({
+  token,
+  children,
+}: {
+  token: string;
+  children?: (connected: boolean) => ReactNode;
+}) {
   const [connection, setConnection] = useState<UazapiPairing | null>(null);
+  const [linked, setLinked] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(true);
   const [attempt, setAttempt] = useState(0);
@@ -25,16 +32,19 @@ export function UazapiConnectionPanel({ token }: { token: string }) {
         let current = await getUazapiPairing(token);
         if (!active) return;
         setConnection(current);
+        if (current.state !== "unlinked") setLinked(true);
         if (current.connected) attempted = false;
         if (
           !current.connected &&
           current.state !== "connecting" &&
-          !attempted
+          !attempted &&
+          (current.state !== "unlinked" || attempt > 0)
         ) {
           attempted = true;
           setBusy(true);
           current = await connectUazapi(token);
           if (!active) return;
+          setLinked(true);
         }
         setConnection(current);
         setError("");
@@ -66,21 +76,24 @@ export function UazapiConnectionPanel({ token }: { token: string }) {
   }, [token, attempt]);
 
   return (
-    <section
-      className="nutri-card uazapi-connection"
-      aria-labelledby="whatsapp-connection-title"
-    >
-      <div>
-        <span className="uazapi-connection-label">WHATSAPP</span>
-        <h1 id="whatsapp-connection-title">
-          {connection?.connected
-            ? "WhatsApp conectado"
-            : "Conecte seu WhatsApp"}
-        </h1>
-        {connection?.connected ? (
-          <p role="status">Seu WhatsApp está conectado a esta conta.</p>
-        ) : (
-          <>
+    <>
+      <p className="uazapi-connection-status" role="status">
+        <span
+          aria-hidden="true"
+          className={connection?.connected ? "is-connected" : "is-disconnected"}
+        />
+        {connection?.connected
+          ? "Conectado"
+          : busy && !connection
+            ? "Verificando…"
+            : "Desconectado"}
+      </p>
+      {!connection?.connected && (
+        <section
+          className="nutri-card uazapi-connection"
+          aria-label="Pareamento do WhatsApp"
+        >
+          <div>
             <p>Use o WhatsApp no celular para ler o QR Code.</p>
             <ol>
               <li>Abra o WhatsApp no seu celular.</li>
@@ -90,47 +103,52 @@ export function UazapiConnectionPanel({ token }: { token: string }) {
               </li>
               <li>Aponte a câmera para o QR Code exibido nesta tela.</li>
             </ol>
-          </>
-        )}
-        {error && <p role="alert">{error}</p>}
-        {!connection?.connected && !busy && (
-          <button
-            className="nutri-primary"
-            onClick={() => setAttempt((value) => value + 1)}
-          >
-            {error
-              ? "Tentar novamente"
-              : connection?.state === "connecting"
-                ? "Verificar conexão"
-                : "Gerar novo QR Code"}
-          </button>
-        )}
-      </div>
-      {!connection?.connected && (
-        <div className="uazapi-qr" aria-live="polite" aria-busy={busy}>
-          {connection?.qr_code ? (
-            <>
-              <img
-                src={connection.qr_code}
-                alt="QR Code para conectar seu WhatsApp"
-                width={264}
-                height={264}
-              />
-              <p>Aguardando leitura no celular…</p>
-            </>
-          ) : (
-            <p role="status">
-              {error
-                ? "QR Code indisponível."
-                : busy
-                  ? "Preparando conexão…"
+            {error && <p role="alert">{error}</p>}
+            {!connection?.connected && !busy && (
+              <button
+                className="nutri-primary"
+                onClick={() => setAttempt((value) => value + 1)}
+              >
+                {error
+                  ? "Tentar novamente"
                   : connection?.state === "connecting"
-                    ? "Aguardando QR Code…"
-                    : "O pareamento terminou. Gere um novo QR Code para continuar."}
-            </p>
+                    ? "Verificar conexão"
+                    : connection?.state === "unlinked"
+                      ? "Conectar WhatsApp"
+                      : "Gerar novo QR Code"}
+              </button>
+            )}
+          </div>
+          {!connection?.connected && (
+            <div className="uazapi-qr" aria-live="polite" aria-busy={busy}>
+              {connection?.qr_code ? (
+                <>
+                  <img
+                    src={connection.qr_code}
+                    alt="QR Code para conectar seu WhatsApp"
+                    width={264}
+                    height={264}
+                  />
+                  <p>Aguardando leitura no celular…</p>
+                </>
+              ) : (
+                <p role="status">
+                  {error
+                    ? "QR Code indisponível."
+                    : busy
+                      ? "Preparando conexão…"
+                      : connection?.state === "connecting"
+                        ? "Aguardando QR Code…"
+                        : connection?.state === "unlinked"
+                          ? "Clique em Conectar WhatsApp para gerar o QR Code."
+                          : "O pareamento terminou. Gere um novo QR Code para continuar."}
+                </p>
+              )}
+            </div>
           )}
-        </div>
+        </section>
       )}
-    </section>
+      {linked && children?.(Boolean(connection?.connected))}
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import secrets
 import time
 from contextvars import ContextVar
@@ -16,6 +17,7 @@ from starlette.responses import JSONResponse, Response
 from app.config.settings import get_settings
 from app.database.session import AsyncSessionLocal
 from app.security.rate_limit import release_successful_attempt
+from app.uazapi.limits import MAX_SEND_BODY
 from app.users.domain.exceptions import UserError
 
 actor_id: ContextVar[UUID | None] = ContextVar("actor_id", default=None)
@@ -30,6 +32,21 @@ latency = Histogram(
 )
 outbox_pending = Gauge("email_outbox_pending", "Invitations pending delivery", registry=registry)
 outbox_failed = Gauge("email_outbox_failed", "Invitations with failed delivery", registry=registry)
+
+whatsapp_pending = Gauge("whatsapp_messages_pending", "Queued WhatsApp messages", registry=registry)
+whatsapp_failed = Gauge("whatsapp_messages_failed", "Failed WhatsApp messages", registry=registry)
+whatsapp_unknown = Gauge(
+    "whatsapp_messages_unknown", "Uncertain WhatsApp deliveries", registry=registry
+)
+whatsapp_events_pending = Gauge(
+    "whatsapp_events_pending", "Unprocessed WhatsApp events", registry=registry
+)
+whatsapp_event_age = Gauge(
+    "whatsapp_oldest_event_seconds", "Oldest pending event age", registry=registry
+)
+whatsapp_queue_age = Gauge(
+    "whatsapp_oldest_message_seconds", "Oldest queued message age", registry=registry
+)
 
 
 def error_response(status: int, detail: str, headers=None):
@@ -75,17 +92,24 @@ class TelemetryMiddleware:
 
         try:
             if scope["method"] in {"POST", "PUT", "PATCH"}:
+                limit = get_settings().max_request_bytes
+                if scope["method"] == "POST" and re.fullmatch(
+                    r"/api/v1/whatsapp/uazapi/conversations/[0-9a-fA-F-]{36}/messages/?",
+                    scope["path"],
+                ):
+                    limit = MAX_SEND_BODY
                 body = bytearray()
                 async with asyncio.timeout(15):
                     while True:
                         chunk = await receive()
                         if chunk["type"] == "http.disconnect":
                             return
-                        body.extend(chunk.get("body", b""))
-                        if len(body) > get_settings().max_request_bytes:
+                        data = chunk.get("body", b"")
+                        if len(body) + len(data) > limit:
                             return await error_response(
                                 413, "Solicitação excede o limite permitido."
                             )(scope, receive, safe_send)
+                        body.extend(data)
                         if not chunk.get("more_body", False):
                             break
                 original_receive = receive
@@ -210,6 +234,39 @@ def configure_operations(app: FastAPI):
 
         try:
             async with asyncio.timeout(3), AsyncSessionLocal() as db:
+                if get_settings().whatsapp_enabled:
+                    from app.care.policies import utcnow
+                    from app.whatsapp.models import WhatsAppEvent, WhatsAppMessage
+
+                    for status, gauge in (
+                        ("queued", whatsapp_pending),
+                        ("failed", whatsapp_failed),
+                        ("unknown", whatsapp_unknown),
+                    ):
+                        gauge.set(
+                            await db.scalar(
+                                select(func.count())
+                                .select_from(WhatsAppMessage)
+                                .where(WhatsAppMessage.status == status)
+                            )
+                            or 0
+                        )
+                    whatsapp_events_pending.set(
+                        await db.scalar(
+                            select(func.count())
+                            .select_from(WhatsAppEvent)
+                            .where(WhatsAppEvent.processed_at.is_(None))
+                        )
+                        or 0
+                    )
+                    for model, condition, gauge in (
+                        (WhatsAppEvent, WhatsAppEvent.processed_at.is_(None), whatsapp_event_age),
+                        (WhatsAppMessage, WhatsAppMessage.status == "queued", whatsapp_queue_age),
+                    ):
+                        oldest = await db.scalar(
+                            select(func.min(model.created_at)).where(condition)
+                        )
+                        gauge.set(max(0, (utcnow() - oldest).total_seconds()) if oldest else 0)
                 outbox_pending.set(
                     await db.scalar(
                         select(func.count())

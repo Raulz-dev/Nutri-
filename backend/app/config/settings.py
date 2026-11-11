@@ -29,7 +29,19 @@ class Settings(BaseSettings):
     auth_account_rate_limit: int = Field(default=5, gt=0)
     auth_account_window_seconds: int = Field(default=900, gt=0)
 
+    whatsapp_enabled: bool = False
+    whatsapp_sends_enabled: bool = False
+    whatsapp_pilot_nutritionist_id: UUID | None = None
+    whatsapp_phone_number_id: str = Field(default="", pattern=r"^\d*$")
+    whatsapp_graph_version: str = Field(default="", pattern=r"^(v\d+\.0)?$")
+    whatsapp_access_token: str = Field(default="", repr=False)
+    whatsapp_app_secret: str = Field(default="", repr=False)
+    whatsapp_verify_token: str = Field(default="", repr=False)
+    whatsapp_allowed_phones: list[str] = []
+
     uazapi_base_url: HttpUrl | None = None
+    uazapi_admin_token: SecretStr = Field(default=SecretStr(""), repr=False)
+    uazapi_webhook_base_url: HttpUrl | None = None
     uazapi_instance_token: SecretStr = Field(default=SecretStr(""), repr=False)
     uazapi_nutritionist_id: UUID | None = None
     uazapi_timeout_seconds: float = Field(default=15, gt=0, le=60)
@@ -58,6 +70,30 @@ class Settings(BaseSettings):
             url = self.uazapi_base_url
             if url.scheme != "https" or url.username or url.password or url.query or url.fragment:
                 raise ValueError("UAZAPI_BASE_URL exige HTTPS sem credenciais, query ou fragmento.")
+        if self.uazapi_webhook_base_url:
+            url = self.uazapi_webhook_base_url
+            if url.scheme != "https" or url.username or url.password or url.query or url.fragment:
+                raise ValueError(
+                    "UAZAPI_WEBHOOK_BASE_URL exige HTTPS sem credenciais, query ou fragmento."
+                )
+        if self.whatsapp_enabled:
+            if not all(
+                (
+                    self.whatsapp_pilot_nutritionist_id,
+                    self.whatsapp_phone_number_id,
+                    self.whatsapp_graph_version,
+                    self.whatsapp_access_token,
+                    self.whatsapp_app_secret,
+                    self.whatsapp_verify_token,
+                    self.outbox_encryption_key,
+                    self.whatsapp_allowed_phones,
+                )
+            ):
+                raise ValueError("Configure os campos WHATSAPP_* e OUTBOX_ENCRYPTION_KEY.")
+            import re
+
+            if any(not re.fullmatch(r"[1-9]\d{7,14}", p) for p in self.whatsapp_allowed_phones):
+                raise ValueError("WHATSAPP_ALLOWED_PHONES exige DDI e números sem pontuação.")
         if self.app_env in ("staging", "production"):
             if not self.outbox_encryption_key or not self.metrics_token:
                 raise ValueError("Configure OUTBOX_ENCRYPTION_KEY e METRICS_TOKEN.")

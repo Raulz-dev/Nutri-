@@ -77,7 +77,7 @@ test("desconectado gera QR uma vez e remove a imagem após conectar", async () =
     connected = true;
     await view.poll();
     assert.equal(view.container.querySelector("img"), null);
-    assert.match(view.container.textContent, /WhatsApp conectado/);
+    assert.match(view.container.textContent, /Conectado/);
     assert.equal(writes.length, 1);
   } finally {
     await view.dispose();
@@ -93,7 +93,7 @@ test("sessão conectada não solicita pareamento", async () => {
   try {
     assert.equal(writes.length, 0);
     assert.equal(view.container.querySelector("img"), null);
-    assert.match(view.container.textContent, /WhatsApp conectado/);
+    assert.match(view.container.textContent, /Conectado/);
   } finally {
     await view.dispose();
   }
@@ -136,6 +136,28 @@ test("falha limpa QR anterior e permite tentar novamente", async () => {
     failed = false;
     await act(async () => view.container.querySelector("button").click());
     assert.ok(view.container.querySelector("img"));
+  } finally {
+    await view.dispose();
+  }
+});
+
+test("nova conta cria a instância somente após clicar em Conectar WhatsApp", async () => {
+  const writes = [];
+  const view = await setup(async (url, options = {}) => {
+    if (options.method === "POST") {
+      writes.push(url);
+      return reply(pairing("connecting", qr));
+    }
+    return reply(pairing("unlinked"));
+  });
+  try {
+    assert.equal(writes.length, 0);
+    const button = view.container.querySelector("button");
+    assert.equal(button.textContent, "Conectar WhatsApp");
+    await act(async () => button.click());
+    assert.equal(writes.length, 1);
+    assert.match(writes[0], /\/connect$/);
+    assert.equal(view.container.querySelector("img").getAttribute("src"), qr);
   } finally {
     await view.dispose();
   }

@@ -310,6 +310,10 @@
   align-items: center;
   flex-wrap: wrap;
 }
+.nutri-patient-invite-actions {
+  justify-content: flex-end;
+}
+
 .nutri-actions > button,
 .nutri-form > button:not(.nutri-primary),
 .nutri-foods > button,
@@ -981,3 +985,13 @@
 @media (max-width: 700px) {
   .nutri-care-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.whatsapp-tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.25rem; }
+.whatsapp-tabs button { padding: .65rem 1rem; border: 1px solid #e9e0f1; border-radius: .65rem; background: white; color: #7542ce; cursor: pointer; }
+.whatsapp-tabs button[aria-pressed="true"] { background: #7542ce; color: white; }
+.whatsapp-setup { margin-bottom: 1.25rem; }
+.whatsapp-conversation { display: flex; flex-direction: column; min-width: 0; height: 100%; padding: 1rem; }
+.whatsapp-conversation h2 { font-size: 1.1rem; }
+.whatsapp-conversation .chat-history { flex: 1; min-height: 12rem; max-height: 60dvh; overflow-y: auto; }
+.whatsapp-conversation .chat-message p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.whatsapp-conversation .chat-message small { overflow-wrap: anywhere; }

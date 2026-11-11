@@ -4,11 +4,13 @@ export function useVisiblePolling(
   refresh: () => Promise<unknown>,
   onError: (reason: unknown) => void,
   immediate = false,
+  enabled = true,
 ) {
   const errorHandler = useRef(onError);
   errorHandler.current = onError;
 
   useEffect(() => {
+    if (!enabled) return;
     let active = true;
     let running = false;
     const poll = async () => {
@@ -32,5 +34,5 @@ export function useVisiblePolling(
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [refresh, immediate]);
+  }, [refresh, immediate, enabled]);
 }

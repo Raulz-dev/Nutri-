@@ -24,15 +24,21 @@
   gap: 2rem;
   padding: 2rem;
 }
-.uazapi-connection-label {
-  color: #7542ce;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+.uazapi-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-weight: 600;
 }
-.uazapi-connection h1 {
-  font-size: 1.65rem;
-  margin: 0.6rem 0 1rem;
+.uazapi-connection-status span {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: #c43245;
+}
+.uazapi-connection-status .is-connected {
+  background: #16803c;
 }
 .uazapi-connection p,
 .uazapi-connection li {
@@ -76,4 +82,201 @@
   .uazapi-qr {
     min-height: 260px;
   }
+}
+
+.nutri-main:has(> .nutri-messaging-page) {
+  box-sizing: border-box;
+  height: 100dvh;
+  padding-bottom: 24px;
+}
+.nutri-messaging-page {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+.nutri-messaging-page > .uazapi-channels,
+.nutri-messaging-page > .uazapi-connection-status {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+.nutri-messaging-page > .uazapi-connection {
+  min-height: 0;
+  overflow-y: auto;
+}
+.nutri-messaging-page > .nutri-chat {
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.nutri-messaging-page .nutri-chat > aside {
+  min-height: 0;
+  max-height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.nutri-messaging-page .nutri-chat > section {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.nutri-messaging-page .chat-panel {
+  flex: 1;
+  height: auto;
+  max-height: none;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.uazapi-chat > aside button span,
+.uazapi-chat .chat-header strong {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .nutri-main:has(> .nutri-messaging-page) {
+    padding-bottom: 82px;
+  }
+  .nutri-messaging-page .nutri-chat:not(.is-open) > section {
+    display: none;
+  }
+}
+.uazapi-chat-footer > p {
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.uazapi-chat-image {
+  display: block;
+  max-width: 100%;
+  max-height: 20rem;
+  object-fit: contain;
+}
+.uazapi-chat-audio {
+  display: block;
+  width: 18rem;
+  max-width: 100%;
+}
+.uazapi-chat-pdf iframe {
+  display: block;
+  width: 28rem;
+  max-width: 100%;
+  height: 18rem;
+  border: 0;
+  margin-bottom: 0.5rem;
+}
+
+.uazapi-chat .chat-header {
+  flex-wrap: wrap;
+}
+
+.uazapi-chat .chat-header > .uazapi-add-patient {
+  display: flex;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+.uazapi-add-patient .nutri-primary {
+  min-height: 28px;
+  padding: 3px 7px;
+  font-size: 12px;
+}
+
+.uazapi-add-patient [aria-hidden="true"] {
+  filter: grayscale(1);
+  opacity: 0.65;
+}
+
+.uazapi-chat .chat-history {
+  background-color: #efeae2;
+  background-image:
+    radial-gradient(circle at 8px 8px, #c7b9a53d 1px, transparent 1.5px),
+    radial-gradient(circle at 25px 24px, #c7b9a531 2px, transparent 2.5px),
+    repeating-linear-gradient(45deg, transparent 0 15px, #d2c4b426 15px 16px, transparent 16px 32px);
+  background-size: 34px 34px, 34px 34px, auto;
+}
+.uazapi-chat > aside > button:not(:first-of-type) {
+  position: relative;
+}
+.uazapi-chat > aside > button:not(:first-of-type)::before {
+  content: "";
+  position: absolute;
+  inset: -4px 8px auto 54px;
+  border-top: 1px solid #eee6f5;
+}
+.uazapi-chat .uazapi-avatar {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #ede7f5;
+  color: #655270;
+}
+.uazapi-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uazapi-chat .chat-composer-compact {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+.uazapi-chat .chat-composer-compact textarea {
+  min-height: 34px;
+  height: 34px;
+  padding: 7px 10px;
+}
+.uazapi-chat .chat-composer-compact button,
+.uazapi-chat .uazapi-attachment-control {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
+}
+.uazapi-chat .uazapi-attachment-control {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  cursor: pointer;
+  background: #f4eef8;
+}
+.uazapi-attachment-control:focus-within {
+  outline: 2px solid #7542ce;
+  outline-offset: 2px;
+}
+.uazapi-attachment-control:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+.uazapi-selected-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+}
+.uazapi-selected-file span {
+  overflow-wrap: anywhere;
+}
+
+.uazapi-composer-tools {
+  display: flex;
+  gap: 0.25rem;
+}
+.uazapi-chat .chat-composer-compact .uazapi-record-control {
+  background: #f4eef8;
+  color: #655270;
+}
+.uazapi-selected-file {
+  flex-wrap: wrap;
+}
+.uazapi-selected-file audio {
+  width: 14rem;
+  max-width: 100%;
+  height: 34px;
 }

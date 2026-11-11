@@ -11,6 +11,7 @@ from app.care.models import (
     CareLinkInvitationModel,
     EmailOutboxModel,
     InvitationModel,
+    NutritionistApplicationModel,
 )
 from app.care.plan_models import MealPlanModel
 from app.database.base import Base
@@ -60,6 +61,7 @@ __all__ = [
     "CareLinkInvitationModel",
     "EmailOutboxModel",
     "InvitationModel",
+    "NutritionistApplicationModel",
     "MealPlanModel",
     "AppointmentModel",
     "CareMessageModel",

@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.care.models import EmailOutboxModel, InvitationModel
 from app.care.outbox import cipher
@@ -95,13 +96,21 @@ async def invite(
     users = await lock_users(db, actor.id)
     if users[actor.id].role != UserRole.ADMIN:
         raise HTTPException(403, "Acesso não autorizado.")
-    normalized = data.email.strip().lower()
+    user = await invite_nutritionist(db, data.name, data.email)
+    return to_response(user)
+
+
+async def invite_nutritionist(
+    db: AsyncSession, name: str, email: str, *, cpf: str | None = None
+) -> User:
+    normalized = email.strip().lower()
     if await db.scalar(select(UserModel.id).where(UserModel.email == normalized)):
         raise UserConflictError("E-mail já cadastrado.")
     user = User(
-        name=data.name,
+        name=name,
+        cpf=cpf,
         email=normalized,
-        password_hash=PasswordHasher().hash(create_opaque_token()),
+        password_hash=await run_in_threadpool(PasswordHasher().hash, create_opaque_token()),
         role=UserRole.NUTRITIONIST,
         status=UserStatus.BLOCKED,
     )
@@ -109,6 +118,7 @@ async def invite(
         id=user.id,
         name=user.name,
         email=user.email,
+        cpf=user.cpf,
         password_hash=user.password_hash,
         role=user.role,
         status=user.status,
@@ -117,10 +127,12 @@ async def invite(
     try:
         await db.flush()
     except IntegrityError as error:
+        if getattr(getattr(error.orig, "diag", None), "constraint_name", None) == "uq_users_cpf":
+            raise UserConflictError("CPF já cadastrado em outra conta.") from error
         raise UserConflictError("E-mail já cadastrado.") from error
     await queue_invitation(db, model)
     audit(db, "invite", "user", model.id, role="nutritionist")
-    return to_response(user)
+    return user
 
 
 @router.get("/admin/invitations/statuses", response_model=list[InvitationDeliveryStatus])

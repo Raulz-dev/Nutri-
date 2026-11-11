@@ -74,3 +74,37 @@ class EmailOutboxModel(Base, IdMixin):
         ),
         Index("ix_outbox_pending", "available_at", postgresql_where=payload.is_not(None)),
     )
+
+
+class NutritionistApplicationModel(Base, IdMixin):
+    __tablename__ = "nutritionist_applications"
+
+    name: Mapped[str] = mapped_column(String(120))
+    email: Mapped[str] = mapped_column(String(320))
+    crn: Mapped[str] = mapped_column(String(80))
+    cpf: Mapped[str | None] = mapped_column(String(11))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    decision: Mapped[str | None] = mapped_column(String(8))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewer_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
+
+    __table_args__ = (
+        CheckConstraint(
+            "cpf IS NULL OR cpf ~ '^[0-9]{11}$'", name="ck_nutritionist_application_cpf"
+        ),
+        CheckConstraint(
+            "decision IN ('approved', 'rejected')", name="ck_nutritionist_application_decision"
+        ),
+        Index(
+            "uq_nutritionist_application_open_email",
+            "email",
+            unique=True,
+            postgresql_where=decision.is_distinct_from("rejected"),
+        ),
+        Index(
+            "ix_nutritionist_application_queue",
+            "created_at",
+            "id",
+            postgresql_where=decision.is_(None),
+        ),
+    )

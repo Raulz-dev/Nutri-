@@ -131,6 +131,7 @@ async def cleanup_expired_attempts() -> None:
 
 SENSITIVE_ROUTES = {
     ("POST", "/api/v1/users"): "register",
+    ("POST", "/api/v1/nutritionist-applications"): "nutritionist-application",
     ("POST", "/api/v1/auth/login"): "login",
     ("POST", "/api/v1/auth/password/forgot"): "recover",
     ("POST", "/api/v1/auth/password/reset"): "reset",
@@ -169,12 +170,11 @@ async def limit_sensitive_requests(request: Request) -> None:
         return
     if not isinstance(body, dict):
         return
-    identifier = (
-        body.get("email") if category in {"login", "register", "recover"} else body.get("token")
-    )
+    email_categories = {"login", "register", "recover", "nutritionist-application"}
+    identifier = body.get("email") if category in email_categories else body.get("token")
     if not isinstance(identifier, str):
         return
-    if category in {"login", "register", "recover"}:
+    if category in email_categories:
         try:
             identifier = str(email_adapter.validate_python(identifier)).lower()
         except ValidationError:

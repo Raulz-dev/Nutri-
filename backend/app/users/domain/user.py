@@ -30,14 +30,14 @@ class User:
     def __post_init__(self) -> None:
         if self.cpf is not None:
             self.cpf = normalize_cpf(self.cpf)
-        self.name = self._validate_name(self.name)
+        self.name = self.validate_name(self.name)
         self.email = self._validate_email(self.email)
         self.password_hash = self._validate_password_hash(self.password_hash)
         self.role = self._validate_role(self.role)
         self.status = self._validate_status(self.status)
 
     def change_name(self, value: str) -> None:
-        self.name = self._validate_name(value)
+        self.name = self.validate_name(value)
 
     def change_email(self, value: str) -> None:
         self.email = self._validate_email(value)
@@ -58,7 +58,7 @@ class User:
         self.status = UserStatus.ACTIVE
 
     @staticmethod
-    def _validate_name(value: str) -> str:
+    def validate_name(value: str) -> str:
         if not isinstance(value, str):
             raise InvalidUserNameError("O nome deve ser um texto.")
         normalized = " ".join(value.split())

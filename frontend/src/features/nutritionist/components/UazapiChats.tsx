@@ -10,8 +10,11 @@ import {
 } from "react";
 import { useVisiblePolling } from "../../../hooks/useVisiblePolling";
 import { ApiError } from "../../../lib/http-client";
+import { listPatients, type PatientRow } from "../../care/api";
 import { MessageBubble, MessageComposer } from "../../care/ConversationParts";
 import {
+  recoverUazapiMessages,
+  startUazapiConversation,
   uazapiConversations,
   uazapiHistory,
   uazapiSend,
@@ -104,6 +107,12 @@ export function UazapiChats({
   const [pageCount, setPageCount] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [patients, setPatients] = useState<PatientRow[] | null>(null);
+  const [patientId, setPatientId] = useState("");
+  const [phone, setPhone] = useState("");
+  const [action, setAction] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [recoveryStatus, setRecoveryStatus] = useState("");
   const sequence = useRef(0);
   const refresh = useCallback(async () => {
     const request = ++sequence.current;
@@ -129,9 +138,132 @@ export function UazapiChats({
     true,
   );
 
+  async function openNewConversation() {
+    setAction("patients");
+    setActionError("");
+    try {
+      const patients: PatientRow[] = [];
+      let offset = 0;
+      for (;;) {
+        const page = await listPatients(token, offset, "", false, false, 100);
+        patients.push(
+          ...page.items.filter((patient) => patient.status === "active"),
+        );
+        offset += page.items.length;
+        if (!page.items.length || offset >= page.total) break;
+      }
+      setPatients(patients);
+    } catch (reason) {
+      setActionError(errorText(reason));
+    } finally {
+      setAction("");
+    }
+  }
+
+  async function start(event: FormEvent) {
+    event.preventDefault();
+    setAction("start");
+    setActionError("");
+    try {
+      const chat = await startUazapiConversation(token, patientId, phone);
+      setSelected(chat);
+      setPatients(null);
+      setPatientId("");
+      setPhone("");
+      await refresh();
+    } catch (reason) {
+      setActionError(errorText(reason));
+    } finally {
+      setAction("");
+    }
+  }
+
+  async function recover() {
+    setAction("recover");
+    setActionError("");
+    setRecoveryStatus("Recuperando mensagens…");
+    try {
+      let offset: number | null = 0;
+      let skipped = 0;
+      while (offset !== null) {
+        const page = await recoverUazapiMessages(token, offset);
+        offset = page.next_offset;
+        skipped += page.skipped;
+      }
+      await refresh();
+      setRecoveryStatus(
+        skipped
+          ? `Recuperação concluída. ${skipped} mensagem(ns) incompatível(is) ignorada(s).`
+          : "Recuperação concluída.",
+      );
+    } catch (reason) {
+      setRecoveryStatus("");
+      setActionError(errorText(reason));
+    } finally {
+      setAction("");
+    }
+  }
+
   return (
     <>
       {error && <p role="alert">{error}</p>}
+      <div>
+        <button
+          type="button"
+          disabled={!connected || !!action}
+          onClick={() => void openNewConversation()}
+        >
+          Nova conversa
+        </button>
+        <button
+          type="button"
+          disabled={!connected || !!action}
+          onClick={() => void recover()}
+        >
+          Recuperar mensagens
+        </button>
+        {recoveryStatus && <p role="status">{recoveryStatus}</p>}
+        {actionError && <p role="alert">{actionError}</p>}
+        {patients && (
+          <form onSubmit={start}>
+            <label>
+              Paciente vinculado
+              <select
+                required
+                value={patientId}
+                onChange={(event) => setPatientId(event.target.value)}
+              >
+                <option value="">Selecione um paciente</option>
+                {patients.map((patient) => (
+                  <option key={patient.id} value={patient.id}>
+                    {patient.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              WhatsApp confirmado do paciente (DDI + DDD + número)
+              <input
+                required
+                inputMode="tel"
+                pattern="[1-9][0-9]{7,14}"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+            </label>
+            <button type="submit" disabled={!connected || !!action}>
+              Abrir conversa
+            </button>
+            <button
+              type="button"
+              disabled={!!action}
+              onClick={() => setPatients(null)}
+            >
+              Cancelar
+            </button>
+          </form>
+        )}
+      </div>
       <div className={`nutri-chat uazapi-chat ${selected ? "is-open" : ""}`}>
         <aside aria-label="Conversas do WhatsApp">
           {conversations === null && (

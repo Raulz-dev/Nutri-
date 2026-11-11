@@ -47,6 +47,23 @@ export const uazapiConversations = (token: string, limit: number, offset = 0) =>
     { token },
   );
 
+export const startUazapiConversation = (
+  token: string,
+  patient_id: string,
+  phone: string,
+) =>
+  apiRequest<UazapiConversation>(conversationsPath, {
+    token,
+    method: "POST",
+    body: JSON.stringify({ patient_id, phone }),
+  });
+
+export const recoverUazapiMessages = (token: string, offset: number) =>
+  apiRequest<{ next_offset: number | null; skipped: number }>(
+    `/whatsapp/uazapi/recover?offset=${offset}`,
+    { token, method: "POST" },
+  );
+
 export const uazapiHistory = (token: string, chatId: string, before?: string) =>
   apiRequest<{
     items: UazapiMessage[];

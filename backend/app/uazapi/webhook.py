@@ -4,14 +4,16 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from cryptography.fernet import InvalidToken
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field, SecretStr, StringConstraints, TypeAdapter, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.care.outbox import cipher
 from app.database.session import get_db
+from app.uazapi.client import UazapiError, find_messages
 from app.uazapi.messaging import (
     STATUS_ORDER,
     apply_receipt_rank,
@@ -20,6 +22,7 @@ from app.uazapi.messaging import (
     record_receipt,
 )
 from app.uazapi.models import UazapiConnection, UazapiConversation, UazapiMessage, UazapiSender
+from app.uazapi.router import Authorized, OwnedConnection, provider_error
 from app.users.domain.enums import UserRole, UserStatus
 from app.users.infrastructure.models import UserModel
 
@@ -135,7 +138,8 @@ async def store_message(db: AsyncSession, connection_id: UUID, message: Incoming
                 conversation_id=conversation_id,
                 sender_id=sender_id,
                 external_id=message.message_id,
-                direction="inbound",
+                direction="outbound" if message.from_me else "inbound",
+                provider_message_id=message.message_id if message.from_me else None,
                 kind=message.kind,
                 text=message.text,
                 occurred_at=datetime(1970, 1, 1, tzinfo=UTC)
@@ -148,15 +152,15 @@ async def store_message(db: AsyncSession, connection_id: UUID, message: Incoming
             await savepoint.rollback()
 
 
-async def reconcile_echo(db: AsyncSession, connection_id: UUID, message: dict) -> None:
+async def reconcile_echo(db: AsyncSession, connection_id: UUID, message: dict) -> bool:
     track_id = message.get("track_id")
     if message.get("track_source") != "mais-saude" or not isinstance(track_id, str):
-        return
+        return False
     try:
         row_id = UUID(track_id)
         message_id = MESSAGE_ID.validate_python(message.get("messageid"))
     except ValueError, ValidationError:
-        return
+        return False
     rank = await record_receipt(db, connection_id, message_id)
     row = await db.scalar(
         select(UazapiMessage)
@@ -173,6 +177,8 @@ async def reconcile_echo(db: AsyncSession, connection_id: UUID, message: dict) -
         status = confirmed_status(message.get("status"))
         if status:
             apply_status(row, status)
+        return True
+    return False
 
 
 class Receipt(BaseModel, strict=True):
@@ -241,3 +247,44 @@ async def receive_webhook(
             raise HTTPException(400, "Mensagem inválida.") from None
         await store_message(db, connection_id, message)
     return Response(status_code=204)
+
+
+class RecoveryPage(BaseModel):
+    next_offset: int | None
+    skipped: int
+
+
+@router.post("/recover", response_model=RecoveryPage)
+async def recover_messages(
+    connection: OwnedConnection,
+    settings: Authorized,
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> RecoveryPage:
+    try:
+        messages, next_offset = await run_in_threadpool(find_messages, settings, offset)
+    except UazapiError as error:
+        raise provider_error(error) from None
+
+    skipped = 0
+    for raw in messages:
+        try:
+            message = IncomingMessage.model_validate(raw)
+        except ValidationError:
+            skipped += 1
+            continue
+        if message.chat_id == "status@broadcast":
+            continue
+        if message.from_me and await reconcile_echo(db, connection.id, raw):
+            await db.commit()
+            continue
+        if message.from_me and await db.scalar(
+            select(UazapiMessage.id).where(
+                UazapiMessage.connection_id == connection.id,
+                UazapiMessage.provider_message_id == message.message_id,
+            )
+        ):
+            continue
+        await store_message(db, connection.id, message)
+        await db.commit()
+    return RecoveryPage(next_offset=next_offset, skipped=skipped)

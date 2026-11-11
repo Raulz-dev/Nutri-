@@ -232,6 +232,63 @@ async def contact_sender(db: AsyncSession, chat: UazapiConversation) -> UazapiSe
     )
 
 
+class StartConversation(BaseModel):
+    patient_id: UUID
+    phone: Annotated[str, StringConstraints(pattern=r"^[1-9][0-9]{7,14}$")]
+
+
+@router.post("/conversations", response_model=ConversationItem)
+async def start_conversation(
+    data: StartConversation, connection: OwnedConnection, db: Db
+) -> ConversationItem:
+    assignment = await current_assignment(db, data.patient_id)
+    patient = await db.get(UserModel, data.patient_id)
+    if (
+        not assignment
+        or assignment.nutritionist_id != connection.user_id
+        or not patient
+        or patient.role != UserRole.PATIENT
+        or patient.status != UserStatus.ACTIVE
+        or patient.deactivated_at
+    ):
+        raise HTTPException(404, "Paciente vinculado não encontrado.")
+
+    external_id = f"{data.phone}@s.whatsapp.net"
+    conversation = insert(UazapiConversation).values(
+        connection_id=connection.id, external_id=external_id, title=patient.name
+    )
+    chat = await db.scalar(
+        conversation.on_conflict_do_update(
+            constraint="uq_uazapi_conversation_external",
+            set_={"title": func.coalesce(UazapiConversation.title, conversation.excluded.title)},
+        ).returning(UazapiConversation)
+    )
+    contact = insert(UazapiSender).values(
+        connection_id=connection.id,
+        external_id=external_id,
+        display_name=patient.name,
+        assignment_id=assignment.id,
+    )
+    sender = await db.scalar(
+        contact.on_conflict_do_update(
+            constraint="uq_uazapi_sender_external",
+            set_={"external_id": contact.excluded.external_id},
+        ).returning(UazapiSender)
+    )
+    locked_assignment = await current_assignment(db, data.patient_id, lock=True)
+    if locked_assignment is None or locked_assignment.id != assignment.id:
+        raise HTTPException(409, "O vínculo do paciente mudou. Atualize e tente novamente.")
+    if sender.assignment_id and sender.assignment_id != assignment.id:
+        previous = await db.get(CareAssignmentModel, sender.assignment_id)
+        if previous and previous.ended_at is None:
+            raise HTTPException(409, "Este número já está associado a outro paciente.")
+    sender.assignment_id = assignment.id
+    last_at = await db.scalar(
+        select(func.max(UazapiMessage.occurred_at)).where(UazapiMessage.conversation_id == chat.id)
+    )
+    return ConversationItem(id=chat.id, title=chat.title or patient.name, last_message_at=last_at)
+
+
 class PatientInput(BaseModel):
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=120)]
     email: EmailStr

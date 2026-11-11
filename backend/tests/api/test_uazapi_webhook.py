@@ -539,3 +539,93 @@ async def test_send_body_stops_reading_oversized_stream():
     with pytest.raises(HTTPException) as error:
         await read_send_body(Request({"type": "http"}, receive))
     assert error.value.status_code == 413
+
+
+async def test_recovery_reuses_webhook_identity_and_creates_missing_chat(instances, monkeypatch):
+    (connection_id, token), (other_connection, _), _ = instances
+    from app.uazapi.router import owned_connection
+
+    async def owner_connection():
+        async with AsyncSessionLocal() as db:
+            return await db.get(UazapiConnection, connection_id)
+
+    original = payload(token)["message"]
+    missing = payload(token, messageid="missing", chatid="200@s.whatsapp.net")["message"]
+    outbound = payload(token, messageid="outbound", fromMe=True)["message"]
+
+    def find_messages(settings, offset):
+        assert settings.uazapi_instance_token.get_secret_value() == token
+        return ([original, missing], 2) if offset == 0 else ([outbound, {}], None)
+
+    monkeypatch.setitem(app.dependency_overrides, owned_connection, owner_connection)
+    monkeypatch.setattr("app.uazapi.webhook.find_messages", find_messages)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        assert (await client.post(url(connection_id), json=payload(token))).status_code == 204
+        for _ in range(2):
+            first = await client.post("/api/v1/whatsapp/uazapi/recover")
+            assert first.json() == {"next_offset": 2, "skipped": 0}
+            last = await client.post("/api/v1/whatsapp/uazapi/recover?offset=2")
+            assert last.json() == {"next_offset": None, "skipped": 1}
+
+    messages = await rows(UazapiMessage, connection_id)
+    assert {message.external_id: message.direction for message in messages} == {
+        "message": "inbound",
+        "missing": "inbound",
+        "outbound": "outbound",
+    }
+    assert len(await rows(UazapiConversation, connection_id)) == 2
+    assert not await rows(UazapiMessage, other_connection)
+
+
+async def test_start_conversation_requires_owned_assignment_and_reuses_chat(instances, monkeypatch):
+    from app.care.models import CareAssignmentModel
+    from app.uazapi.router import owned_connection
+
+    (connection_id, _), (other_connection, _), _ = instances
+    async with AsyncSessionLocal() as db, db.begin():
+        owner = await db.get(UazapiConnection, connection_id)
+        other = await db.get(UazapiConnection, other_connection)
+        patients = []
+        for nutritionist in (owner, other, owner):
+            patient = UserModel(
+                name="Paciente de teste",
+                email=f"{uuid4()}@example.com",
+                password_hash="unused",
+                role=UserRole.PATIENT,
+                status=UserStatus.ACTIVE,
+            )
+            db.add(patient)
+            await db.flush()
+            db.add(
+                CareAssignmentModel(
+                    patient_id=patient.id,
+                    nutritionist_id=nutritionist.user_id,
+                    actor_id=nutritionist.user_id,
+                )
+            )
+            patients.append(patient.id)
+
+    async def owner_connection():
+        return owner
+
+    monkeypatch.setitem(app.dependency_overrides, owned_connection, owner_connection)
+    path = "/api/v1/whatsapp/uazapi/conversations"
+    body = {"patient_id": str(patients[0]), "phone": "5585999999999"}
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        assert (
+            await client.post(path, json={**body, "patient_id": str(patients[1])})
+        ).status_code == 404
+        first = await client.post(path, json=body)
+        retry = await client.post(path, json=body)
+        assert first.status_code == retry.status_code == 200
+        assert first.json() == retry.json()
+        assert (
+            await client.post(path, json={**body, "patient_id": str(patients[2])})
+        ).status_code == 409
+        history = await client.get(f"{path}/{first.json()['id']}/messages")
+        assert history.json()["patient_id"] == str(patients[0])
+        assert history.json()["items"] == []

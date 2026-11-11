@@ -308,3 +308,24 @@ def send_media(
     if media_type == "document":
         payload["docName"] = filename
     return _request(settings, "POST", "/send/media", payload)
+
+
+def find_messages(settings: Settings, offset: int) -> tuple[list, int | None]:
+    payload = _request(
+        settings,
+        "POST",
+        "/message/find",
+        {"limit": 50, "offset": offset},
+        response_limit=8 * 1024 * 1024,
+    )
+    messages = payload.get("messages")
+    pagination = payload.get("pagination")
+    if not isinstance(messages, list) or not isinstance(pagination, dict):
+        raise UazapiError("invalid_response")
+    has_more = pagination.get("hasMore")
+    if has_more is False:
+        return messages, None
+    next_offset = pagination.get("nextOffset")
+    if has_more is not True or type(next_offset) is not int or next_offset <= offset:
+        raise UazapiError("invalid_response")
+    return messages, next_offset

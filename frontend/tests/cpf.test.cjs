@@ -95,3 +95,63 @@ for (const mode of ["register", "first-access", "legacy"]) {
     }
   });
 }
+
+test("cadastro de nutricionista envia CPF normalizado e CRN para análise", async () => {
+  const { CpfTestApp } = await loadSource("../tests/fixtures/cpf-app.tsx");
+  const original = global.fetch;
+  const requests = [];
+  global.fetch = async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return reply(null, 204);
+  };
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+
+  try {
+    await act(async () =>
+      root.render(React.createElement(CpfTestApp, { mode: "register" })),
+    );
+    const checkbox = container.querySelector('input[type="checkbox"]');
+    await act(async () => checkbox.click());
+    assert.ok(container.querySelector('input[name="cpf"]'));
+    assert.equal(container.querySelector('input[name="password"]'), null);
+
+    await act(async () => {
+      for (const [name, value] of Object.entries({
+        name: "Profissional Sintético",
+        email: "SYNTHETIC@example.com",
+        crn: "CRN-11 12345",
+        cpf: "111.444.777-35",
+      })) {
+        const element = container.querySelector(`input[name="${name}"]`);
+        Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value",
+        ).set.call(element, value);
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await act(async () =>
+      container
+        .querySelector("form")
+        .dispatchEvent(
+          new Event("submit", { bubbles: true, cancelable: true }),
+        ),
+    );
+
+    assert.equal(requests.length, 1);
+    assert.ok(requests[0].url.endsWith("/nutritionist-applications"));
+    assert.deepEqual(requests[0].body, {
+      name: "Profissional Sintético",
+      email: "synthetic@example.com",
+      crn: "CRN-11 12345",
+      cpf: "11144477735",
+    });
+    assert.match(container.textContent, /Solicitação recebida/);
+  } finally {
+    await act(async () => root.unmount());
+    global.fetch = original;
+    container.remove();
+  }
+});

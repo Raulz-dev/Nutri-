@@ -33,6 +33,18 @@ export function registerPatientRequest(data: {
   });
 }
 
+export function submitNutritionistApplication(data: {
+  name: string;
+  email: string;
+  crn: string;
+  cpf: string;
+}) {
+  return apiRequest<void>("/nutritionist-applications", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export function resetPasswordRequest(
   token: string,
   newPassword: string,

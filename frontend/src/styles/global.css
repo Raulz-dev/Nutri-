@@ -335,6 +335,22 @@ h1 {
   gap: 12px;
 }
 
+.register-role {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.register-role input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #6f46a6;
+}
+
 .register-page .field {
   gap: 5px;
 }

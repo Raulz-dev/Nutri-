@@ -6,6 +6,7 @@ import { inviteNutritionist, listInvitationStatuses, resendInvitation, type Invi
 import { deactivateUser, listAllUsers, updateUser } from "../../users/api";
 import type { User } from "../../users/types";
 import { AdminIcon, AdminShell } from "../AdminShell";
+import { NutritionistApplications } from "../components/users/NutritionistApplications";
 import { ConfirmModal } from "../components/users/ConfirmModal";
 import { InviteNutritionistModal } from "../components/users/InviteNutritionistModal";
 import { TablePagination } from "../../../components/shared/TablePagination";
@@ -103,6 +104,7 @@ export function AdminNutritionistsPage() {
 
   return <AdminShell title="Nutricionistas" subtitle="Convide profissionais e gerencie suas contas.">
     <ErrorToast message={error} />
+    <NutritionistApplications token={token} onApproval={() => Promise.all([refresh(), refreshStatuses()])} />
 
     <div className="users-page-action"><button type="button" className="admin-primary-button" onClick={() => { setModalError(""); setInviting(true); }}><AdminIcon name="plus"/> Convidar nutricionista</button></div>
     <section className="admin-panel users-search-panel"><div className="users-filters"><label className="admin-search"><span className="sr-only">Pesquisar nutricionistas</span><AdminIcon name="search"/><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Nome ou e-mail" /></label></div></section>

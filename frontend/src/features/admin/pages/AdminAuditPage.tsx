@@ -6,6 +6,7 @@ import { AdminShell } from "../AdminShell";
 import { TablePagination } from "../../../components/shared/TablePagination";
 
 const labels: Record<string,string> = {
+  review_nutritionist_application: "Análise de cadastro profissional",
   create: "Cadastro", invite: "Convite", resend_invitation: "Reenvio", accept_invitation: "Primeiro acesso",
   login: "Entrada", update: "Atualização", deactivate: "Desativação",
   change_password: "Alteração de senha",

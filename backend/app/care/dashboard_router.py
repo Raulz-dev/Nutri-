@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.care.models import CareAssignmentModel, EmailOutboxModel, InvitationModel
@@ -217,7 +217,7 @@ async def nutritionist_plan_summary(
         )
         .exists()
     )
-    linked = (
+    patients = (
         select(UserModel.id, UserModel.name, active_plan.label("has_plan"))
         .join(
             CareAssignmentModel,
@@ -229,13 +229,38 @@ async def nutritionist_plan_summary(
             UserModel.role == UserRole.PATIENT,
             UserModel.deactivated_at.is_(None),
         )
-        .order_by(UserModel.name, UserModel.id)
+        .cte("linked_patients")
     )
-    rows = (await db.execute(linked)).all()
-    pending = [PatientWithoutPlan(id=row.id, name=row.name) for row in rows if not row.has_plan]
+
+    totals = (
+        select(
+            func.count().filter(patients.c.has_plan).label("active_plans"),
+            func.count().filter(~patients.c.has_plan).label("patients_without_plan"),
+        )
+        .select_from(patients)
+        .cte("plan_totals")
+    )
+    pending = (
+        select(patients.c.id, patients.c.name)
+        .where(~patients.c.has_plan)
+        .order_by(patients.c.name, patients.c.id)
+        .limit(10)
+        .cte("pending_patients")
+    )
+    rows = (
+        await db.execute(
+            select(
+                totals.c.active_plans, totals.c.patients_without_plan, pending.c.id, pending.c.name
+            )
+            .select_from(totals.outerjoin(pending, true()))
+            .order_by(pending.c.name, pending.c.id)
+        )
+    ).all()
     return NutritionistPlanSummary(
         as_of=utcnow(),
-        active_plans=len(rows) - len(pending),
-        patients_without_plan=len(pending),
-        pending_patients=pending[:10],
+        active_plans=rows[0].active_plans,
+        patients_without_plan=rows[0].patients_without_plan,
+        pending_patients=[
+            PatientWithoutPlan(id=row.id, name=row.name) for row in rows if row.id is not None
+        ],
     )

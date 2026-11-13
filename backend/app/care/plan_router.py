@@ -3,11 +3,13 @@ from typing import Annotated
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.care.plan_models import MealPlanModel
+from app.care.plan_pdf import render_plan_pdf
 from app.care.plan_schemas import (
     MealPlanPage,
     MealPlanResponse,
@@ -21,6 +23,7 @@ from app.database.session import get_db
 from app.users.domain.enums import UserRole
 from app.users.domain.exceptions import UserAccessDeniedError, UserConflictError
 from app.users.domain.user import User
+from app.users.infrastructure.models import UserModel
 from app.users.presentation.dependencies import get_current_user
 
 router = APIRouter(tags=["Planos alimentares"])
@@ -184,24 +187,27 @@ async def publish_plan(
         raise UserConflictError("A validade do plano já terminou.")
     effective_start = max(row.start_on, today)
     cutoff = effective_start - timedelta(days=1)
-    published = (
-        await db.scalars(
-            select(MealPlanModel)
-            .where(
-                MealPlanModel.patient_id == patient_id,
-                MealPlanModel.status == "published",
-            )
-            .with_for_update()
+    published = update(MealPlanModel).where(
+        MealPlanModel.patient_id == patient_id,
+        MealPlanModel.status == "published",
+    )
+    await db.execute(
+        published.where(MealPlanModel.start_on > today).values(
+            status="closed",
+            closed_at=utcnow(),
+            revision=MealPlanModel.revision + 1,
         )
-    ).all()
-    for previous in published:
-        if previous.start_on > today:
-            previous.status = "closed"
-            previous.closed_at = utcnow()
-            previous.revision += 1
-        elif previous.start_on <= today <= previous.end_on and previous.effective_end_on >= today:
-            previous.effective_end_on = min(previous.end_on, cutoff)
-            previous.revision += 1
+    )
+    await db.execute(
+        published.where(
+            MealPlanModel.start_on <= today,
+            MealPlanModel.end_on >= today,
+            MealPlanModel.effective_end_on >= today,
+        ).values(
+            effective_end_on=func.least(MealPlanModel.end_on, cutoff),
+            revision=MealPlanModel.revision + 1,
+        )
+    )
     row.status = "published"
     row.effective_end_on = row.end_on
     row.published_at = utcnow()
@@ -251,3 +257,36 @@ async def close_plan(
     await db.refresh(row)
     audit(db, "close_meal_plan", "meal_plan", row.id, patient_id=str(patient_id))
     return to_response(row)
+
+
+@router.get("/patients/{patient_id}/plans/{plan_id}/pdf")
+async def export_plan_pdf(
+    patient_id: UUID,
+    plan_id: UUID,
+    actor: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db, scope="function")],
+):
+    await clinical_reader(db, actor, patient_id)
+    row = await db.get(MealPlanModel, plan_id)
+    if row is None or row.patient_id != patient_id:
+        raise HTTPException(404, "Plano não encontrado.")
+    if actor.role == UserRole.PATIENT:
+        today = local_today()
+        if (
+            row.status != "published"
+            or row.start_on > today
+            or row.effective_end_on is None
+            or row.effective_end_on < today
+        ):
+            raise HTTPException(403, "Plano indisponível para exportação.")
+    elif row.status == "draft" and row.author_id != actor.id:
+        raise HTTPException(403, "Plano indisponível para exportação.")
+    patient = await db.get(UserModel, patient_id)
+    content = await run_in_threadpool(render_plan_pdf, to_response(row), patient.name)
+    return Response(
+        content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="plano-alimentar-{row.id}.pdf"',
+        },
+    )

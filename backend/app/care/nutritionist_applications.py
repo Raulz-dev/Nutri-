@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints
-from sqlalchemy import literal_column, select
+from sqlalchemy import literal_column, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,18 +80,31 @@ async def submit_application(data: ApplicationInput, db: DB) -> None:
 
 
 @router.get(ADMIN_PATH, response_model=ApplicationPage)
-async def pending_applications(actor: Actor, db: DB, offset: Annotated[int, Query(ge=0)] = 0):
+async def pending_applications(
+    actor: Actor,
+    db: DB,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    search: Annotated[str, Query(max_length=320)] = "",
+):
     require_admin(actor)
+    page_size = 10
+    statement = select(Application).where(Application.decision.is_(None))
+    if term := search.strip():
+        statement = statement.where(
+            or_(
+                Application.name.icontains(term, autoescape=True),
+                Application.email.icontains(term, autoescape=True),
+                Application.crn.icontains(term, autoescape=True),
+            )
+        )
     rows = (
         await db.scalars(
-            select(Application)
-            .where(Application.decision.is_(None))
-            .order_by(Application.created_at, Application.id)
+            statement.order_by(Application.created_at, Application.id)
             .offset(offset)
-            .limit(26)
+            .limit(page_size + 1)
         )
     ).all()
-    return {"items": rows[:25], "has_more": len(rows) > 25}
+    return {"items": rows[:page_size], "has_more": len(rows) > page_size}
 
 
 @router.post(ADMIN_PATH + "/{application_id}/review", status_code=204)

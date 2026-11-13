@@ -119,6 +119,13 @@ async def test_meal_plan_publication_vigency_history_and_access(monkeypatch):
         assert draft.status_code == 201, draft.text
         plan_id = draft.json()["id"]
         assert draft.json()["revision"] == 1
+        pdf_url = f"{base}/plans/{plan_id}/pdf"
+        for denied in (patient_headers, admin_headers, unlinked_headers, other_headers):
+            assert client.get(pdf_url, headers=denied).status_code == 403
+        exported_draft = client.get(pdf_url, headers=nutritionist_headers)
+        assert exported_draft.status_code == 200
+        assert exported_draft.content.startswith(b"%PDF-")
+        assert exported_draft.headers["cache-control"] == "no-store"
         assert client.get(f"{base}/plans/current", headers=patient_headers).json() is None
 
         edited = client.put(
@@ -151,6 +158,10 @@ async def test_meal_plan_publication_vigency_history_and_access(monkeypatch):
         assert published.status_code == 200, published.text
         assert published.json()["revision"] == 3
         assert published.json()["status"] == "published"
+        exported = client.get(pdf_url, headers=patient_headers)
+        assert exported.status_code == 200
+        assert exported.headers["content-type"] == "application/pdf"
+        assert exported.content.startswith(b"%PDF-")
         current = client.get(f"{base}/plans/current", headers=patient_headers)
         assert current.status_code == 200
         assert current.json()["id"] == plan_id

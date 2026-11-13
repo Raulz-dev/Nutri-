@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.care.interaction_models import AppointmentModel, CareMessageModel
 from app.care.interaction_schemas import (
@@ -254,48 +255,53 @@ async def list_conversations(
 ):
     if actor.role not in (UserRole.PATIENT, UserRole.NUTRITIONIST):
         raise UserAccessDeniedError("Acesso não autorizado.")
-    filtered = select(CareAssignmentModel).where(
+    scope = (
         CareAssignmentModel.patient_id == actor.id
         if actor.role == UserRole.PATIENT
         else CareAssignmentModel.nutritionist_id == actor.id
     )
-    total = await db.scalar(select(func.count()).select_from(filtered.subquery())) or 0
+    total = await db.scalar(select(func.count()).select_from(CareAssignmentModel).where(scope)) or 0
+    patient = aliased(UserModel)
+    nutritionist = aliased(UserModel)
     rows = (
-        await db.scalars(
-            filtered.order_by(CareAssignmentModel.started_at.desc(), CareAssignmentModel.id.desc())
+        await db.execute(
+            select(CareAssignmentModel, patient.name, nutritionist.name)
+            .join(patient, patient.id == CareAssignmentModel.patient_id)
+            .join(nutritionist, nutritionist.id == CareAssignmentModel.nutritionist_id)
+            .where(scope)
+            .order_by(CareAssignmentModel.started_at.desc(), CareAssignmentModel.id.desc())
             .offset(offset)
             .limit(limit)
         )
     ).all()
-    result = []
-    for row in rows:
-        patient = await db.get(UserModel, row.patient_id)
-        nutritionist = await db.get(UserModel, row.nutritionist_id)
-        unread = (
-            await db.scalar(
-                select(func.count())
-                .select_from(CareMessageModel)
-                .where(
-                    CareMessageModel.assignment_id == row.id,
-                    CareMessageModel.sender_id != actor.id,
-                    CareMessageModel.read_at.is_(None),
-                )
+
+    unread_by_assignment = {}
+    if rows:
+        unread_rows = await db.execute(
+            select(CareMessageModel.assignment_id, func.count())
+            .where(
+                CareMessageModel.assignment_id.in_([assignment.id for assignment, _, _ in rows]),
+                CareMessageModel.sender_id != actor.id,
+                CareMessageModel.read_at.is_(None),
             )
-            or 0
+            .group_by(CareMessageModel.assignment_id)
         )
-        result.append(
-            ConversationResponse(
-                id=row.id,
-                patient_id=row.patient_id,
-                patient_name=patient.name,
-                nutritionist_id=row.nutritionist_id,
-                nutritionist_name=nutritionist.name,
-                active=row.ended_at is None,
-                started_at=row.started_at,
-                ended_at=row.ended_at,
-                unread=unread,
-            )
+        unread_by_assignment = dict(unread_rows.all())
+
+    result = [
+        ConversationResponse(
+            id=assignment.id,
+            patient_id=assignment.patient_id,
+            patient_name=patient_name,
+            nutritionist_id=assignment.nutritionist_id,
+            nutritionist_name=nutritionist_name,
+            active=assignment.ended_at is None,
+            started_at=assignment.started_at,
+            ended_at=assignment.ended_at,
+            unread=unread_by_assignment.get(assignment.id, 0),
         )
+        for assignment, patient_name, nutritionist_name in rows
+    ]
     return ConversationPage(items=result, total=total, offset=offset, limit=limit)
 
 

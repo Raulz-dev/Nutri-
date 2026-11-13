@@ -14,6 +14,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AdminDashboardPage } from "../features/admin/pages/AdminDashboardPage";
 import { AdminChatPage } from "../features/admin/pages/AdminChatPage";
 import { AdminPatientsPage } from "../features/admin/pages/AdminPatientsPage";
+import { AdminNutritionistApplicationsPage } from "../features/admin/pages/AdminNutritionistApplicationsPage";
 import { AdminNutritionistsPage } from "../features/admin/pages/AdminNutritionistsPage";
 import { AdminAuditPage } from "../features/admin/pages/AdminAuditPage";
 import { AdminSettingsPage } from "../features/admin/pages/AdminSettingsPage";
@@ -58,6 +59,7 @@ export function AppRouter() {
           <Route path="/app/admin" element={<AdminDashboardPage />} />
           <Route path="/app/admin/pacientes" element={<AdminPatientsPage />} />
           <Route path="/app/admin/nutricionistas" element={<AdminNutritionistsPage />} />
+          <Route path="/app/admin/solicitacoes" element={<AdminNutritionistApplicationsPage />} />
           <Route path="/app/admin/usuarios" element={<LegacyPatientsRedirect />} />
           <Route path="/app/admin/vinculos" element={<LegacyPatientsRedirect />} />
           <Route path="/app/admin/chat" element={<AdminChatPage />} />

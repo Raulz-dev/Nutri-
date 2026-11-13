@@ -340,9 +340,6 @@
 .users-table-panel {
   margin-top: 16px;
 }
-.nutritionist-applications-heading {
-  padding: 14px 22px 16px;
-}
 .users-search-panel .users-filters {
   grid-template-columns: minmax(0, 1.6fr) minmax(170px, 0.7fr) minmax(
       170px,

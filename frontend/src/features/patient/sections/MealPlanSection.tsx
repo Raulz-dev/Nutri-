@@ -1,6 +1,7 @@
 import { useModalBehavior } from "../../../hooks/useModalBehavior";
 import { useRef, useState } from "react";
 
+import { ExportPlanButton } from "../../care/ExportPlanButton";
 import { PanelHeader } from "../components/PanelHeader";
 import { PatientIcon } from "../components/PatientIcon";
 import { usePatientData } from "../usePatientData";
@@ -55,6 +56,7 @@ export function MealPlanSection() {
         </dl>
       </section>
 
+      {clinical.mealPlan && <ExportPlanButton patientId={clinical.mealPlan.patientId} planId={clinical.mealPlan.id} />}
       {patientData.mealPlan.guidance && <p className="patient-panel section-panel">{patientData.mealPlan.guidance}</p>}
       <section className="meal-plan-content">
         <div className="meal-schedule">

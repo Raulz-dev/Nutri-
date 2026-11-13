@@ -1,6 +1,9 @@
 import { env } from "./env";
 
-type RequestOptions = RequestInit & { token?: string };
+type RequestOptions = RequestInit & {
+  token?: string;
+  responseType?: "json" | "blob";
+};
 let accessToken: string | null = null;
 let refreshPromise: Promise<string> | null = null;
 let generation = 0;
@@ -52,7 +55,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { token, headers, ...requestInit } = options;
+  const { token, headers, responseType, ...requestInit } = options;
   const send = (credential?: string) =>
     fetch(`${env.apiUrl}${path}`, {
       ...requestInit,
@@ -94,6 +97,7 @@ export async function apiRequest<T>(
       response.status,
     );
   }
+  if (responseType === "blob") return (await response.blob()) as T;
   return response.status === 204
     ? (undefined as T)
     : (response.json() as Promise<T>);

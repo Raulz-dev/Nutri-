@@ -9,6 +9,7 @@ import {
   listPlanHistory,
   type MealPlanRecord,
 } from "../../../care/meal-plan-api";
+import { ExportPlanButton } from "../../../care/ExportPlanButton";
 import { MealPlanHistoryCard } from "./MealPlanHistoryCard";
 import { useClinicalHistory } from "../../hooks/useClinicalHistory";
 import { Modal } from "../Modal";
@@ -96,12 +97,14 @@ export function MealPlansStep({
           </button>
         )}
         {plans.map((plan) => (
-          <MealPlanHistoryCard
-            key={plan.id}
-            plan={plan}
-            onEdit={setEditor}
-            onClose={setClosing}
-          />
+          <div key={plan.id}>
+            <MealPlanHistoryCard
+              plan={plan}
+              onEdit={setEditor}
+              onClose={setClosing}
+            />
+            <ExportPlanButton patientId={patientId} planId={plan.id} />
+          </div>
         ))}
         {!planLoading && !planError && !planTotal && (
           <p className="nutri-empty">Nenhum plano alimentar criado.</p>

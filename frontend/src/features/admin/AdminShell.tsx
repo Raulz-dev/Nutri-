@@ -23,6 +23,7 @@ export function AdminShell({ title, subtitle, children }: { title: string; subti
           <NavLink to="/app/admin" end><AdminIcon name="dashboard" /><span>Visão geral</span></NavLink>
           <NavLink to="/app/admin/pacientes"><AdminIcon name="users" /><span>Pacientes</span></NavLink>
           <NavLink to="/app/admin/nutricionistas"><AdminIcon name="nutritionist" /><span>Nutricionistas</span></NavLink>
+          <NavLink to="/app/admin/solicitacoes"><AdminIcon name="invite" /><span>Solicitações de cadastro</span></NavLink>
           <NavLink to="/app/admin/chat"><AdminIcon name="chat" /><span>Chat</span></NavLink>
           <NavLink to="/app/admin/auditoria"><AdminIcon name="audit" /><span>Auditoria</span></NavLink>
           <NavLink to="/app/admin/configuracoes"><AdminIcon name="settings" /><span>Configurações</span></NavLink>
